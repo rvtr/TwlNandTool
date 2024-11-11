@@ -1,0 +1,1 @@
+void death(char *message, u8 *buffer);

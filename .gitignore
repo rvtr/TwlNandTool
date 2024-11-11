@@ -1,0 +1,29 @@
+*.o
+*.d
+*.nds
+*.dsi
+TwlNandTool.*.srl
+TwlNandTool.*.tad
+*.elf
+*.map
+*build/
+*.vscode
+*.DS_Store
+*._*
+
+make.sh
+NandFirmCheck.sublime-project
+NandFirmCheck.sublime-workspace
+
+# Non-essential NAND titles:
+#	HNAx = Launcher
+#	HNBx = Settings
+#	4NFA = NandFiler
+#	4TNA = TwlNmenu
+nitrofiles/import/*/HNAA*
+nitrofiles/import/*/HNBA*
+nitrofiles/import/*/4NFA*
+nitrofiles/import/*/4TNA*
+
+ntool/
+arm9/include/version.h

@@ -1,0 +1,21 @@
+#include <nds.h>
+#include <fat.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/statvfs.h>
+#include <nds/arm9/nand.h>
+#include "f_xy.h"
+#include "twltool/dsi.h"
+#include "nandio.h"
+#include "nandfirm.h"
+#include "sector0.h"
+#include "crypto.h"
+#include "../message.h"
+#include "../main.h"
+#include "../video.h"
+#include "../menu.h"
+
+int fsMain(void);
+int readMbr(void);
+int repairMbr(void);
+int formatMain(void);
