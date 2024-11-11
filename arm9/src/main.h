@@ -17,12 +17,14 @@ extern bool unlaunchPatches;
 extern bool charging;
 extern u8 batteryLevel;
 extern u8 region;
+extern u32 consoleSign;
+extern char consoleSignName[9];
 
 void installMenu();
 void titleMenu();
 void backupMenu();
 void testMenu();
-int testRoutine(void);
+int debug1();
 
 extern PrintConsole topScreen;
 extern PrintConsole bottomScreen;

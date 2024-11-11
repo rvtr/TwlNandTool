@@ -46,6 +46,7 @@ extern u8 CID[16];
 extern u8 consoleIDfixed[8];
 
 extern bool good_nandio_write(int inputAddress, int inputLength, u8 *buffer, bool crypt);
+extern bool good_nandio_write_file(int inputAddress, int inputLength, FILE *fp, bool crypt);
 
 extern bool nandio_startup();
 extern bool nandio_shutdown();

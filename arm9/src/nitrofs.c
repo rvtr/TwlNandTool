@@ -445,9 +445,12 @@ bool nitroFSGood(void) {
         int length = ftell(file);
         fseek(file, 0, SEEK_SET);
 
-        char *version = (char *)malloc((length + 1) * sizeof(char));
-        
+        char *version = (char *)malloc((length) * sizeof(char));
+        version[length] = '\0'; 
+
         fread(version, 1, length, file);
+
+        printf("VER |%s|%s|\n", version, VERSION);
         nitroFSGood = (strcmp(version, VERSION) == 0);
         fclose(file);
     }

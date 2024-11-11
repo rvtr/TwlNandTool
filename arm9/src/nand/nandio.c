@@ -283,13 +283,61 @@ bool good_nandio_write(int inputAddress, int inputLength, u8 *buffer, bool crypt
 				//iprintf("\n0 to %02X of %02X", SECTOR_SIZE, i);
 				//iprintf("\n%02X to %02X of buffer", ((i  - sectorNum) * SECTOR_SIZE) - byteOffset, (((i  - sectorNum) * SECTOR_SIZE) - byteOffset) + SECTOR_SIZE);
 			}
-			// I need to do a cmp here
+			// I need to do a cmp here t0 save NAND writes
 			// Write sector
 			if (crypt == true) {
 				dsi_nand_crypt(buffer, buffer, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
 			}
 			nand_WriteSectors(i, 1, sector_buf);
 			i++;
+			// Do some check to make sure it is not outside of NAND range.
+		}
+	}
+	return true;
+}
+
+bool good_nandio_write_file(int inputAddress, int inputLength, FILE *fp, bool crypt) {
+	int byteOffset = inputAddress % SECTOR_SIZE;
+	int sectorNum = inputAddress / SECTOR_SIZE;
+	int byteEndOffset = (inputAddress+inputLength) % SECTOR_SIZE;
+	int sectorEndNum = (inputAddress+inputLength) / SECTOR_SIZE;
+	int i;
+    u8 buffer[SECTOR_SIZE];
+	if (inputLength <= 0x200) {
+		// Handle a single sector write differently since it is unpredictable
+		nand_ReadSectors(sectorNum, 1, sector_buf);
+		fread(buffer, 1, inputLength, fp);
+		memcpy(sector_buf, buffer, inputLength);
+		if (crypt == true) {
+			dsi_nand_crypt(sector_buf, sector_buf, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
+		}
+		nand_WriteSectors(sectorNum, 1, sector_buf);
+	} else {
+		for (i = sectorNum; i < sectorEndNum + 1;) {
+			// Back up sector
+		    nand_ReadSectors(i, 1, sector_buf);
+
+			if (i == sectorNum) {
+				// Handle the first sector differently since we'll only be writing a partial amount of data
+				fread(buffer, 1, SECTOR_SIZE, fp);
+				memcpy(sector_buf + byteOffset, buffer, SECTOR_SIZE - byteOffset);
+			} else if (i == sectorEndNum) {
+				// Handle the last sector differently since we'll only be writing a partial amount of data
+				fread(buffer, 1, byteEndOffset, fp);
+				memcpy(sector_buf, buffer - byteOffset, byteEndOffset);
+			} else {
+				// Handle the middle sectors the same because they'll always be the full sector
+				fread(buffer, 1, SECTOR_SIZE, fp);
+				memcpy(sector_buf, buffer, SECTOR_SIZE);
+			}
+			// I need to do a cmp here t0 save NAND writes
+			// Write sector
+			if (crypt == true) {
+				dsi_nand_crypt(buffer, buffer, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
+			}
+			nand_WriteSectors(i, 1, sector_buf);
+			i++;
+			// Do some check to make sure it is not outside of NAND range.
 		}
 	}
 	return true;

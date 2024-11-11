@@ -26,7 +26,7 @@ endif
 
 # Print new version if changed
 ifeq (,$(findstring $(GIT_VER), $(shell cat include/version.h)))
-$(shell printf "\"$(GIT_VER)\"" > ../../nitrofiles/version_twlnandtool)
+$(shell echo -n $(GIT_VER) > ../../nitrofiles/version_twlnandtool)
 $(shell printf "#ifndef VERSION_H\n#define VERSION_H\n\n#define VERSION \"$(GIT_VER)\"\n\n#endif // VERSION_H\n" > include/version.h)
 endif
 

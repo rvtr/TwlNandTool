@@ -15,12 +15,103 @@
 #include "../video.h"
 
 u32 done=0;
-size_t i;
 
 void death(char *message, u8 *buffer){
 	iprintf("\n%s\n", message);
 	free(buffer);
 	while(1)swiWaitForVBlank();
+}
+
+static size_t i;
+
+enum {
+	MENUSTATE_CHECK_NF_VER,
+	MENUSTATE_IMPORT_NF,
+	MENUSTATE_IMPORT_NF_SDMC,
+	MENUSTATE_READ_CID,
+	BACK
+};
+
+static int _nfMenu(int cursor)
+{
+	//top screen
+	clearScreen(cMAIN);
+
+	printf("\n\x1B[40mTwlNandTool Ver0.0");
+	printf("\n\nNAND repair tool by RMC/RVTR");
+	printf("\n\nMode: NandFirm");
+
+	//menu
+	Menu* m = newMenu();
+	setMenuHeader(m, "TwlNandTool");
+
+	char modeStr[32];
+	addMenuItem(m, "Check NandFirm", NULL, 0);
+	addMenuItem(m, "Import NandFirm", NULL, 0);
+	addMenuItem(m, "Import NandFirm (SDMC)", NULL, 0);
+	addMenuItem(m, "CID Info", NULL, 0);
+	addMenuItem(m, "Back", NULL, 0);
+
+	m->cursor = cursor;
+
+	//bottom screen
+	printMenu(m);
+
+	while (!programEnd)
+	{
+		swiWaitForVBlank();
+		scanKeys();
+
+		if (moveCursor(m))
+			printMenu(m);
+
+		if (keysDown() & KEY_A)
+			break;
+	}
+
+	int result = m->cursor;
+	freeMenu(m);
+
+	return result;
+}
+
+int nfMain(void)
+{
+
+	int cursor = 0;
+
+	while (!programEnd)
+	{
+		cursor = _nfMenu(cursor);
+
+		switch (cursor)
+		{
+
+			case MENUSTATE_CHECK_NF_VER:
+				nandFirmRead();
+				break;
+
+			case MENUSTATE_IMPORT_NF:
+				nandFirmImport(false);
+				break;
+
+			case MENUSTATE_IMPORT_NF_SDMC:
+				nandFirmImport(true);
+				break;
+
+			case MENUSTATE_READ_CID:
+				nandPrintInfo();
+				break;
+
+			case BACK:
+				programEnd = true;
+				break;
+		}
+	}
+
+	programEnd = false;
+
+	return 0;
 }
 
 int nandFirmRead(void) {
@@ -51,6 +142,43 @@ int nandFirmRead(void) {
 
 	iprintf("\n\n\n  Please Push Select To Return  ");
 
+
+	while (true)
+	{
+		swiWaitForVBlank();
+		scanKeys();
+
+		if (keysDown() & KEY_SELECT )
+			break;
+	}
+}
+
+int nandFirmImport(bool sdmc) {
+
+	clearScreen(cSUB);
+
+	iprintf("\n>> Debug1");
+	iprintf("\n NandFirm write                 ");
+	iprintf("\n--------------------------------");
+
+    printf("Opening NandFirm...\n");
+
+    char file_path[100];
+    snprintf(file_path, 100, "nitro:/import/%s/%s-launcher.nand", consoleSignName, sdmc ? "sdmc" : "menu");
+    FILE *file = fopen(file_path, "r");
+
+    printf("%s\n", file_path);
+
+    if(file) {
+    	// First 0x200 of NandFirm is reserved for MBR
+        fseek(file, 0, SEEK_END);
+        int file_length = ftell(file);
+        fseek(file, 0x200, SEEK_SET);
+    	printf("Importing...\n");
+        good_nandio_write_file(0x200, file_length - ftell(file), file, false);
+        printf("Done!\n");
+        fclose(file);
+    }
 
 	while (true)
 	{
@@ -97,20 +225,3 @@ int nandPrintInfo(void) {
 			break;
 	}
 }
-
-
-/*
-
-	I'd actually like to make a good RAW NAND R/W routine.
-	nandRead(byteAddress, amount, infile)
-
-
-	I want to find the sector (626) and sector offset (80) for the hex address below:
-
-		Offset:      320592
-		Sector size: 512
-
-
-	byteOffset = byteAddress % sectorSize and sector = byteAddress / sectorSize
-
-*/

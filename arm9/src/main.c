@@ -79,9 +79,8 @@ PrintConsole topScreen;
 PrintConsole bottomScreen;
 
 typedef enum {
-  MENUSTATE_CHECK_NANDFIRM,
   MENUSTATE_FS_MENU,
-  MENUSTATE_CHECK_NANDINFO,
+  MENUSTATE_NF_MENU,
   MENUSTATE_TEST,
   MENUSTATE_EXIT
 } MenuState;
@@ -101,9 +100,8 @@ static int _mainMenu(int cursor)
     setMenuHeader(m, "TwlNandTool");
 
     char modeStr[32];
-    addMenuItem(m, "Check NandFirm", NULL, 0);
     addMenuItem(m, "FileSystem Menu", NULL, 0);
-    addMenuItem(m, "CID Info", NULL, 0);
+    addMenuItem(m, "NandFirm menu", NULL, 0);
     addMenuItem(m, "Debug1", NULL, 0);
     addMenuItem(m, "Exit", NULL, 0);
 
@@ -152,9 +150,9 @@ int main(int argc, char **argv)
     consoleSign = fifoGetValue32(FIFO_USER_01);
 
     if (consoleSign == 0x00) {
-        strcpy(consoleSignName, "RETAIL");
+        strcpy(consoleSignName, "prod");
     } else {
-        strcpy(consoleSignName, "PANDA");
+        strcpy(consoleSignName, "dev");
     }
 
     videoInit();
@@ -183,11 +181,18 @@ int main(int argc, char **argv)
 		if(!nitroFSInit("TwlNandTool.prod.srl") || !nitroFSGood()) {
 			if(!nitroFSInit("TwlNandTool.dev.srl") || !nitroFSGood()) {
 				if(!nitroFSInit("ntrboot.nds") || !nitroFSGood()) {
-					messageBox("nitroFSInit()...\x1B[31mFailed\n\x1B[40m\nSome features will not work.\n\nTry placing the SRL for your DSion your SD card root like this:\n\nSDMC:/TwlNandTool.prod.srl\nSDMC:/TwlNandTool.dev.srl\nSDMC:/ntrboot.nds\n\n");
+					while (true)
+					{
+						swiWaitForVBlank();
+						scanKeys();
+
+						if (keysDown() & KEY_SELECT )
+							break;
+					}
+					messageBox("nitroFSInit()...\x1B[31mFailed\n\x1B[40m\nSome features will not work.\n\nTry placing the SRL for your DSion your SD card root like this:\n\nSDMC:/TwlNandTool.prod.srl\nSDMC:/TwlNandTool.dev.srl\nSDMC:/ntrboot.nds\n");
 				}
 			}
 		}
-		//return 0;
 	}
 
 	//setup nand access
@@ -204,20 +209,16 @@ int main(int argc, char **argv)
         switch (cursor)
         {
 
-            case MENUSTATE_CHECK_NANDFIRM:
-                nandFirmRead();
-                break;
-
             case MENUSTATE_FS_MENU:
                 fsMain();
                 break;
 
-            case MENUSTATE_CHECK_NANDINFO:
-                nandPrintInfo();
+            case MENUSTATE_NF_MENU:
+                nfMain();
                 break;
 
             case MENUSTATE_TEST:
-                testRoutine();
+                debug1();
                 break;
 
             case MENUSTATE_EXIT:
@@ -240,72 +241,27 @@ int main(int argc, char **argv)
     return 0;
 }
 
-int testRoutine(void) {
+int debug1(void) {
 
 	clearScreen(cSUB);
 
-	iprintf("\n>> Test Area");
-	iprintf("\n NAND R/W test                  ");
+	iprintf("\n>> Debug1");
+	iprintf("\n NandFirm write                 ");
 	iprintf("\n--------------------------------");
 
-	int fail=0;
-		
-	int byteAddress = 0x4E400;
-	int inputLength = 0x401;
+    printf("Opening NandFirm...\n");
 
-	int byteOffset = byteAddress % SECTOR_SIZE;
-	int sectorNum = byteAddress / SECTOR_SIZE;
-
-	int byteEndOffset = (byteAddress+inputLength) % SECTOR_SIZE;
-	int sectorEndNum = (byteAddress+inputLength) / SECTOR_SIZE;
-
-	iprintf("\nInput address   : %02X", byteAddress);
-	iprintf("\nInput length    : %02X", inputLength);
-	iprintf("\nInput sector    : %02X", sectorNum);
-	iprintf("\nSector offset   : %02X", byteOffset);
-	iprintf("\nEnd sector      : %02X", sectorEndNum);
-	iprintf("\nSector offset   : %02X", byteEndOffset);
-	iprintf("\n");
-
-	int i;
-	if (sectorNum == sectorEndNum) {
-		// Handle a single sector write differently since it is unpredictable
-		//nand_ReadSectors(sectorNum, 1, sector_buf);
-		//memcpy(sector_buf + inputLength, file_buf, inputLength);
-		//nand_WriteSectors(1, 1, sector_buf);
-		iprintf("\n%02X to %02X of %02X", byteOffset, byteEndOffset, sectorNum);
-		iprintf("\n%02X to %02X of file_buf", 0, inputLength);
-	} else {
-		for (i = sectorNum; i < sectorEndNum + 1;) {
-			// Back up sector
-		    //nand_ReadSectors(i, 1, sector_buf);
-			if (i == sectorNum) {
-				// Handle the first sector differently since we'll only be writing a partial amount of data
-				//memcpy(sector_buf + byteOffset, file_buf, SECTOR_SIZE - byteOffset);
-				iprintf("\n%02X to %02X of %02X", byteOffset, (SECTOR_SIZE), i);
-				iprintf("\n0 to %02X of file_buf", (SECTOR_SIZE - byteOffset), i);
-			} else if (i == sectorEndNum) {
-				// Handle the last sector differently since we'll only be writing a partial amount of data
-				//memcpy(sector_buf, file_buf + (((i  - sectorNum) * SECTOR_SIZE) - byteOffset), byteEndOffset);
-				iprintf("\n0 to %02X of %02X (end)", byteEndOffset, i);
-				iprintf("\n%02X to %02X of file_buf", ((i  - sectorNum) * SECTOR_SIZE) - byteOffset, (((i  - sectorNum) * SECTOR_SIZE) + byteEndOffset) - byteOffset);
-			} else {
-				// Handle the middle sectors the same because they'll always be the full sector
-				//memcpy(sector_buf, file_buf + (((i  - sectorNum) * SECTOR_SIZE) - byteOffset), SECTOR_SIZE);
-				iprintf("\n0 to %02X of %02X", SECTOR_SIZE, i);
-				iprintf("\n%02X to %02X of file_buf", ((i  - sectorNum) * SECTOR_SIZE) - byteOffset, (((i  - sectorNum) * SECTOR_SIZE) - byteOffset) + SECTOR_SIZE);
-			}
-			i++;
-			// I need to do a cmp here
-
-			// Write sector
-			//nand_WriteSectors(i, 1, sector_buf);
-		}
-	}
-
-	iprintf("\n\n\n  Please Push Select To Return  ");
-
-	// Do some check to make sure it is not outside of NAND range.
+    FILE *file = fopen("nitro:/import/prod/menu-launcher.nand", "r");
+    if(file) {
+    	// First 0x200 of NandFirm is reserved for MBR
+        fseek(file, 0, SEEK_END);
+        int file_length = ftell(file);
+        fseek(file, 0x200, SEEK_SET);
+    	printf("Importing...\n");
+        good_nandio_write_file(0x200, file_length - ftell(file), file, false);
+        printf("Done!\n");
+        fclose(file);
+    }
 
 	while (true)
 	{
