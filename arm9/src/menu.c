@@ -1,6 +1,8 @@
 #include "menu.h"
 #include "main.h"
 #include "video.h"
+#include "version.h"
+#include "nand/nandio.h"
 
 Menu* newMenu()
 {
@@ -12,12 +14,14 @@ Menu* newMenu()
 	m->nextPage = false;
 	m->changePage = 0;
 	m->header[0] = '\0';
+	m->lheader[0] = '\0';
 
 	for (int i = 0; i < ITEMS_PER_PAGE; i++)
 	{
 		m->items[i].directory = false;
 		m->items[i].label = NULL;
 		m->items[i].value = NULL;
+		m->items[i].help = NULL;
 	}
 
 	return m;
@@ -33,7 +37,7 @@ void freeMenu(Menu* m)
 	m = NULL;
 }
 
-void addMenuItem(Menu* m, char const* label, char const* value, bool directory)
+void addMenuItem(Menu* m, char const* label, char const* value, bool directory, char const* help)
 {
 	if (!m) return;
 
@@ -52,6 +56,12 @@ void addMenuItem(Menu* m, char const* label, char const* value, bool directory)
 	{
 		m->items[i].value = (char*)malloc(strlen(value)+1);
 		sprintf(m->items[i].value, "%s", value);
+	}
+
+	if (help)
+	{
+		m->items[i].help = (char*)malloc(200);
+		sprintf(m->items[i].help, "%s", help);
 	}
 
 	m->itemCount += 1;
@@ -93,6 +103,25 @@ void setMenuHeader(Menu* m, char* str)
 	sprintf(m->header, "%.30s", strPtr);
 }
 
+
+void setListHeader(Menu* m, char* str)
+{
+	if (!m) return;
+
+	if (!str)
+	{
+		m->lheader[0] = '\0';
+		return;
+	}
+
+	char* strPtr = str;
+
+	if (strlen(strPtr) > 30)
+		strPtr = str + (strlen(strPtr) - 30);
+
+	sprintf(m->lheader, "%.30s", strPtr);
+}
+
 void resetMenu(Menu* m)
 {
 	m->cursor = 0;
@@ -123,16 +152,44 @@ void clearMenu(Menu* m)
 	m->itemCount = 0;
 }
 
-void printMenu(Menu* m)
+void clearHelpMenu(Menu* m)
 {
-	clearScreen(cSUB);
+	consoleSet(cMAIN);
+	iprintf("\x1B[40m\x1b[0;0H\x1B[40m%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%cHelp%c%c%c%c%c", (char)138, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)134, (char)135, (char)136, (char)136, (char)136, (char)140);
+	iprintf("\x1b[1;0H\x1b[K");
+	iprintf("\x1b[2;0H\x1b[K");
+	iprintf("\x1b[3;0H\x1b[K");
+	iprintf("\x1b[4;0H\x1b[K");
+	iprintf("\x1b[5;0H\x1b[K");
+	iprintf("\x1b[6;0H\x1b[K");
+	iprintf("\x1b[7;0H\x1b[K");
+	iprintf("\x1b[8;0H\x1b[K");
+	iprintf("\x1b[9;0H%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c", (char)139, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)141);
+	iprintf("\x1b[10;0H\x1b[K");
+	iprintf("\x1b[11;0H\x1B[40m%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%cInfo%c%c%c%c%c", (char)138, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)134, (char)135, (char)136, (char)136, (char)136, (char)140);
+	iprintf("\x1B[30m\x1b[12;0H\x1b[K %s %s", m->header, VERSION);
+	iprintf("\x1b[13;0H\x1b[K Built on:   %s", BUILD_DATE);
+	iprintf("\x1b[14;0H\x1b[K Made by:    RMC/RVTR");
+	iprintf("\x1b[15;0H\x1b[K");
+	iprintf("\x1b[16;0H\x1b[K");
+	iprintf("\x1b[17;0H\x1b[K Run on: %s\x1B[40m", consoleType);
+	iprintf("\x1b[18;0H%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\x1B[30m", (char)139, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)141);
+}
+
+void printHelpMenu(Menu* m) 
+{
+	if (!m) return;
+	iprintf("\x1B[30m\x1b[1;0H %s", m->items[m->cursor].help);
+}
+
+void printMenu(Menu* m, int level)
+{
+
+	clearHelpMenu(m);
+	printHelpMenu(m);
+	consoleSet(cSUB);
 
 	if (!m) return;
-
-	//header
-	iprintf("\x1B[42m");	//green
-	iprintf("%.30s\n\n", m->header);
-	iprintf("\x1B[40m");	//white
 
 	if (m->itemCount <= 0)
 	{
@@ -140,22 +197,77 @@ void printMenu(Menu* m)
 		return;
 	}
 
+    int longestLength = 0;
+
+    for (int i = 0; i < m->itemCount; i++) {
+        if (m->items[i].label) {
+            int currentLength = strlen(m->items[i].label);
+            if (currentLength > longestLength) {
+                longestLength = currentLength;
+            }
+        }
+    }
+
+/*
+
+(char)134 = lbracket
+(char)135 = rbracket
+
+	Double line borders:
+(char)130 = top lcorner
+(char)128 = hpipe
+(char)132 = top rcorner
+(char)129 = vpipe
+(char)131 = bot lcorner
+(char)133 = bot rcorner
+
+	Single line borders:
+
+(char)138 = top lcorner
+(char)136 = hpipe
+(char)140 = top rcorner
+(char)137 = vpipe
+(char)139 = bot lcorner
+(char)141 = bot rcorner
+*/
+
+iprintf("\x1B[30m\x1b[%d;%dH%c%c%c%s%c", 1 + level, level + 1, (char)138, (char)136, (char)134, m->lheader, (char)135);
+for (int j = 0; j < longestLength - 3 - strlen(m->lheader); j++) {
+    printf("%c", (char)136);
+}
+printf("%c\n", (char)140);
 	//items
 	for (int i = 0; i < m->itemCount; i++)
 	{
 		if (m->items[i].label)
 		{
-			if (m->items[i].directory)
-				iprintf(" [%.28s]\n", m->items[i].label);
-			else
-				iprintf(" %.30s\n", m->items[i].label);
+			if (m->items[i].directory) {
+				iprintf("\x1b[%d;%dH%c[%.28s]", i + 2 + level, level + 1, (char)137, m->items[i].label);
+			    for (int j = strlen(m->items[i].label); j < longestLength; j++) {
+			        printf(" ");
+			    }
+			    printf("%c\n", (char)137);
+			} else {
+				iprintf("\x1b[%d;%dH%c%.30s", i + 2 + level, level + 1, (char)137, m->items[i].label);
+			    for (int j = strlen(m->items[i].label); j < longestLength; j++) {
+			        printf(" ");
+			    }
+			    printf("%c\n", (char)137);
+			}
 		}
-		else
+		else {
 			iprintf(" \n");
+		}
 	}
 
+iprintf("\x1b[%d;%dH%c", m->itemCount + 2 + level, level + 1, (char)139);
+for (int j = 0; j < longestLength; j++) {
+    printf("%c", (char)136);
+}
+printf("%c\n", (char)141);
+
 	//cursor
-	iprintf("\x1b[%d;0H>", 2 + m->cursor);
+	iprintf("\x1b[%d;%dH%c\x1B[41m%s\x1B[30m\x1b[%dC%c", m->cursor + 2 + level, level + 1, (char)137, m->items[m->cursor].label, longestLength - strlen(m->items[m->cursor].label), (char)137);
 
 	//scroll arrows
 	if (m->page > 0)
@@ -225,4 +337,12 @@ bool moveCursor(Menu* m)
 	}
 
 	return !(lastCursor == m->cursor);
+}
+
+char downloadPlayLoading(int number) {
+	char pictoload[] = {(char)142, (char)143, (char)144, (char)145, (char)146, (char)147, (char)148, (char)149};
+    static int counter = 0;
+	
+	counter = (counter % 7) + 1;
+	return pictoload[counter];
 }

@@ -38,7 +38,7 @@ void printProgressBar(float percent)
 	{
 		consoleSet(cMAIN);
 
-		iprintf("\x1B[42m");	//green
+		iprintf("\x1B[32m");	//green
 
 		//Print frame
 		if (lastBars <= 0)
@@ -291,7 +291,7 @@ bool copyDir(char const* src, char const* dst)
 				}
 				else
 				{
-					iprintf("\x1B[42m");	//green
+					iprintf("\x1B[32m");	//green
 					iprintf("Done\n");
 					iprintf("\x1B[47m");	//white
 				}
@@ -357,7 +357,7 @@ bool deleteDir(char const* path)
 				}
 				else
 				{
-					iprintf("\x1B[42m");
+					iprintf("\x1B[32m");
 					iprintf("Done\n");
 					iprintf("\x1B[47m");
 				}
@@ -377,7 +377,7 @@ bool deleteDir(char const* path)
 	}
 	else
 	{
-		iprintf("\x1B[42m");
+		iprintf("\x1B[32m");
 		iprintf("Done\n");
 		iprintf("\x1B[47m");
 	}

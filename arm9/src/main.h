@@ -19,12 +19,14 @@ extern u8 batteryLevel;
 extern u8 region;
 extern u32 consoleSign;
 extern char consoleSignName[9];
+extern char consoleType[9];
 
 void installMenu();
 void titleMenu();
 void backupMenu();
 void testMenu();
 int debug1();
+int debug2();
 
 extern PrintConsole topScreen;
 extern PrintConsole bottomScreen;

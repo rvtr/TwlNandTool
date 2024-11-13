@@ -20,5 +20,5 @@ void death(char *message, u8 *buffer);
 int nfMain(void);
 
 int nandFirmRead(void);
-int nandFirmImport(bool sdmc);
+bool nandFirmImport(bool sdmc);
 int nandPrintInfo(void);

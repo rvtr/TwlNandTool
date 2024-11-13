@@ -50,6 +50,46 @@ u8 vbrPhoto[54] = {
 	0x20, 0x20, 0x20, 0x20, 0x20, 0x20
 };
 
+// File tables for /sys/ folder and HWInfo secure
+// Why? HWInfo is always at one of 3 set offsets. I use those offsets for HWInfo recovery.
+// We will copy over these file tables to ensure the offsets stay the same.
+
+// No idea what this is but I need it lol
+u8 fileTable1[16] = {
+	0xF8, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0xFF, 0xFF, 0x00, 0x00
+};
+
+// File table for /sys/ folder
+u8 fileTable2[64] = {
+	0x41, 0x73, 0x00, 0x79, 0x00, 0x73, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x0F,
+	0x00, 0x54, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x53, 0x59, 0x53, 0x20,
+	0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x10, 0x00, 0x00, 0x00, 0x00,
+	0x21, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21, 0x28, 0x02, 0x00,
+	0x00, 0x00, 0x00, 0x00
+};
+
+// File table for HWInfo
+u8 fileTable3[192] = {
+	0x2E, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x30,
+	0x00, 0x00, 0x00, 0x00, 0x21, 0x28, 0x00, 0x00, 0x00, 0x00, 0x75, 0x02,
+	0x64, 0x59, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2E, 0x2E, 0x20, 0x20,
+	0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x10, 0x00, 0x00, 0x00, 0x00,
+	0x21, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21, 0x28, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0xE5, 0x6C, 0x00, 0x6F, 0x00, 0x67, 0x00, 0x00,
+	0x00, 0xFF, 0xFF, 0x0F, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xE5, 0x4F, 0x47, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+	0x00, 0x00, 0x01, 0x00, 0x21, 0x28, 0x64, 0x59, 0x00, 0x00, 0x01, 0x00,
+	0x21, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x48, 0x00, 0x57,
+	0x00, 0x49, 0x00, 0x4E, 0x00, 0x46, 0x00, 0x0F, 0x00, 0x9C, 0x4F, 0x00,
+	0x5F, 0x00, 0x53, 0x00, 0x2E, 0x00, 0x64, 0x00, 0x61, 0x00, 0x00, 0x00,
+	0x74, 0x00, 0x00, 0x00, 0x48, 0x57, 0x49, 0x4E, 0x46, 0x4F, 0x5F, 0x53,
+	0x44, 0x41, 0x54, 0x20, 0x00, 0x00, 0x01, 0x00, 0x21, 0x28, 0x64, 0x59,
+	0x00, 0x00, 0x50, 0x02, 0x64, 0x59, 0x06, 0x00, 0x00, 0x40, 0x00, 0x00
+};
+
 static size_t i;
 
 enum {
@@ -62,28 +102,22 @@ enum {
 
 static int _fsMenu(int cursor)
 {
-	//top screen
-	clearScreen(cMAIN);
 
-	printf("\n\x1B[40mTwlNandTool Ver0.0");
-	printf("\n\nNAND repair tool by RMC/RVTR");
-	printf("\n\nMode: FileSystem");
-
-	//menu
-	Menu* m = newMenu();
-	setMenuHeader(m, "TwlNandTool");
+    Menu* m = newMenu();
+    setMenuHeader(m, "TwlNandTool");
+    setListHeader(m, "FileSystem");
 
 	char modeStr[32];
-	addMenuItem(m, "Read MBR", NULL, 0);
-	addMenuItem(m, "Repair MBR", NULL, 0);
-	addMenuItem(m, "Format TWL_MAIN", NULL, 0);
-	addMenuItem(m, "Format TWL_PHOTO", NULL, 0);
-	addMenuItem(m, "Back", NULL, 0);
+	addMenuItem(m, "Read MBR", NULL, 0, "Test the Master Boot Record.");
+	addMenuItem(m, "Repair MBR", NULL, 0, "Repair the Master Boot Record.");
+	addMenuItem(m, "Format TWL_MAIN", NULL, 0, "Format the partition where the\n firmware, apps, and saves are\n installed.\n\n THIS WILL ERASE EVERYTHING.");
+	addMenuItem(m, "Format TWL_PHOTO", NULL, 0, "Format the partition where\n photos are stored.\n\n THIS WILL ERASE EVERYTHING.");
+	addMenuItem(m, "Back", NULL, 0, "Leave the FileSystem menu.");
 
 	m->cursor = cursor;
 
 	//bottom screen
-	printMenu(m);
+	printMenu(m, 1);
 
 	while (!programEnd)
 	{
@@ -91,7 +125,7 @@ static int _fsMenu(int cursor)
 		scanKeys();
 
 		if (moveCursor(m))
-			printMenu(m);
+			printMenu(m, 1);
 
 		if (keysDown() & KEY_A)
 			break;
@@ -128,7 +162,7 @@ int fsMain(void)
 				break;
 
 			case FORMAT_PHOTO:
-				repairMbr();
+				formatPhoto();
 				break;
 
 			case BACK:
@@ -162,7 +196,7 @@ int readMbr(void) {
         }
     }
     if(parse_mbr(sector_buf, is3DS)) {
-    	iprintf("\n\n    \x1B[31mERROR!\x1B[40m MBR is corrupted.");
+    	iprintf("\n\n    \x1B[31mERROR!\x1B[30m MBR is corrupted.");
     }
 
 	iprintf("\n\n  Please Push Select To Return  ");
@@ -213,10 +247,10 @@ int repairMbr(void) {
 	dsi_nand_crypt(sector_buf, sector_buf, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
 
     if(parse_mbr(sector_buf, is3DS)) {
-    	iprintf("\n\n    \x1B[31mERROR!\x1B[40m Failed to fix MBR.");
+    	iprintf("\n\n    \x1B[31mERROR!\x1B[30m Failed to fix MBR.");
+    } else {
+    	iprintf("\n\x1B[32mThe new MBR passed!\x1B[30m");
     }
-
-    iprintf("\n\x1B[32mThe new MBR passed!\x1B[40m");
 
 	iprintf("\n\n  Please Push Select To Return  ");
 
@@ -233,18 +267,69 @@ int repairMbr(void) {
 int formatMain(void) {
 	clearScreen(cSUB);
 
-	iprintf("\n>> Write TWL_MAIN VBR           ");
+	iprintf("\n>> Format TWL_MAIN              ");
 	iprintf("\n--------------------------------");
 
+	iprintf("\n\nWriting VBR...");
 	memset(file_buf, 0, 0x200);
 	// Write the first 54 bytes, then pad to 0x1FE. Finally write 0x55AA
 	memcpy(file_buf, vbrMain, sizeof(vbrMain));
     memset(file_buf + sizeof(vbrMain), 0, (BUFFER_SIZE - sizeof(vbrMain) - 2));
     memset(file_buf + SECTOR_SIZE - 2, 0x55, 1);
     memset(file_buf + SECTOR_SIZE - 1, 0xAA, 1);
-	good_nandio_write(0x10EE00, 0x200, file_buf, false);
+	good_nandio_write(0x10EE00, 0x200, file_buf, true);
+	iprintf("\nClearing file tables...");
+	memset(file_buf, 0, 0x600);
+	for (i = 0; i < 0x3d8; i++) {
+		good_nandio_write(0x10EE00 + 0x200 + (0x600 * i), 0x600, file_buf, true);
+	}
+	iprintf("\nMaking new file tables...");
+	memset(file_buf, 0, 0x200);
+	memcpy(file_buf, fileTable1, sizeof(fileTable1));
+	good_nandio_write(0x115800, sizeof(fileTable1), file_buf, true);
+	memset(file_buf, 0, 0x200);
+	memcpy(file_buf, fileTable2, sizeof(fileTable2));
+	good_nandio_write(0x11C000, sizeof(fileTable2), file_buf, true);
+	memset(file_buf, 0, 0x200);
+	memcpy(file_buf, fileTable3, sizeof(fileTable3));
+	good_nandio_write(0x120000, sizeof(fileTable3), file_buf, true);
 
-	iprintf("\n\nDone! Please confirm VBR is correct.");
+	iprintf("\nAll done!");
+
+	iprintf("\n\n  Please Push Select To Return  ");
+
+	while (true)
+	{
+		swiWaitForVBlank();
+		scanKeys();
+
+		if (keysDown() & KEY_SELECT )
+			break;
+	}	
+}
+
+int formatPhoto(void) {
+	clearScreen(cSUB);
+
+	iprintf("\n>> Format TWL_PHOTO             ");
+	iprintf("\n--------------------------------");
+
+	iprintf("\n\nWriting VBR...");
+	memset(file_buf, 0, 0x200);
+	// Write the first 54 bytes, then pad to 0x1FE. Finally write 0x55AA
+	memcpy(file_buf, vbrPhoto, sizeof(vbrPhoto));
+    memset(file_buf + sizeof(vbrPhoto), 0, (BUFFER_SIZE - sizeof(vbrPhoto) - 2));
+    memset(file_buf + SECTOR_SIZE - 2, 0x55, 1);
+    memset(file_buf + SECTOR_SIZE - 1, 0xAA, 1);
+	good_nandio_write(0xCF09A00, 0x200, file_buf, true);
+	iprintf("\nClearing file tables...");
+	memset(file_buf, 0, 0x200);
+	for (i = 0; i < 0x13A; i++) {
+		good_nandio_write(0xCF09A00 + 0x200 + (0x200 * i), 0x200, file_buf, true);
+	}
+
+	iprintf("\nAll done!");
+
 	iprintf("\n\n  Please Push Select To Return  ");
 
 	while (true)

@@ -23,7 +23,7 @@ bool choiceBox(char* message)
 
 	iprintf("\x1B[33m");	//yellow
 	iprintf("%s\n", message);
-	iprintf("\x1B[40m");	//white
+	iprintf("\x1B[30m");	//white
 	iprintf("\x1b[%d;0H\tYes\n\tNo\n", choiceRow);
 
 	while (!programEnd)
@@ -60,7 +60,7 @@ bool choicePrint(char* message)
 
 	iprintf("\x1B[34m");	//yellow
 	iprintf("\n%s\n", message);
-	iprintf("\x1B[40m");	//white
+	iprintf("\x1B[30m");	//white
 	iprintf("Yes - [A]\nNo  - [B]\n");
 
 	while (!programEnd)
@@ -103,7 +103,7 @@ bool randomConfirmBox(char* message)
 
 	iprintf("\x1B[43m");	//yellow
 	iprintf("%s\n", message);
-	iprintf("\x1B[40m");	//white
+	iprintf("\x1B[30m");	//white
 	iprintf("\n<START> cancel\n");
 
 	while (!programEnd && sequencePosition < sizeof(sequence))

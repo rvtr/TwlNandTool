@@ -10,14 +10,14 @@
 #include "nand/nandfirm.h"
 #include "video.h"
 #include "nitrofs.h"
+#include "font.h"
 #include <stdlib.h>
 #include <stdio.h>
 
 /*
 
 	TODO:
-	- Write good NAND I/O routine
-	- Import NandFirm
+	- Write good NAND read routine
 	- Detect debugger vs dev
 	- Create FAT
 
@@ -35,7 +35,7 @@
 		};
 
 		Pad to 0x200b and make sure to have 0x55AA (CRINGE I HATE MBR I HATE MBR I HATE MBR) <-- I don't even remember writing this.
-		Now fill 0x200*688b (total 0x171000) afterwards with zerobytes.
+		Now fill 0x200*B88b (total 0x171000) afterwards with zerobytes.
 
 		Congrats. This is a formatted file system. Please don't hurt me.
 
@@ -74,6 +74,7 @@ u8 batteryLevel = 0;
 u8 region = 0;
 u32 consoleSign;
 char consoleSignName[9];
+char consoleType[9];
 
 PrintConsole topScreen;
 PrintConsole bottomScreen;
@@ -81,34 +82,34 @@ PrintConsole bottomScreen;
 typedef enum {
   MENUSTATE_FS_MENU,
   MENUSTATE_NF_MENU,
+  MENUSTATE_NULL,
   MENUSTATE_TEST,
+  MENUSTATE_TEST2,
   MENUSTATE_EXIT
 } MenuState;
 
 static int _mainMenu(int cursor)
 {
-    //top screen
-    clearScreen(cMAIN);
-
-    printf("\n\x1B[40mTwlNandTool Ver%s", VERSION);
-    printf("\nRun on: %s (%02lX)", consoleSignName, consoleSign);
-    printf("\n\nNAND repair tool by RMC/RVTR");
-    printf("\n\nMode: Main Menu");
+	clearScreen(cSUB);
+ 	clearScreen(cMAIN);
 
     //menu
     Menu* m = newMenu();
     setMenuHeader(m, "TwlNandTool");
+    setListHeader(m, "START MENU");
 
     char modeStr[32];
-    addMenuItem(m, "FileSystem Menu", NULL, 0);
-    addMenuItem(m, "NandFirm menu", NULL, 0);
-    addMenuItem(m, "Debug1", NULL, 0);
-    addMenuItem(m, "Exit", NULL, 0);
+    addMenuItem(m, "FileSystem Menu", NULL, 0, "Options such as repairing MBR\n and formatting twl_main/photo.");
+    addMenuItem(m, "NandFirm menu", NULL, 0, "NandFirm (stage2) installers\n and version testing.");
+    addMenuItem(m, "---------------", NULL, 0, "");
+    addMenuItem(m, "Debug1", NULL, 0, "Testing area");
+    addMenuItem(m, "Debug2", NULL, 0, "Testing area");
+    addMenuItem(m, "Exit", NULL, 0, "Leave the program.");
 
-    m->cursor = cursor;
+    m->cursor = (cursor);
 
     //bottom screen
-    printMenu(m);
+    printMenu(m, 0);
 
     while (!programEnd)
     {
@@ -116,7 +117,7 @@ static int _mainMenu(int cursor)
         scanKeys();
 
         if (moveCursor(m))
-            printMenu(m);
+            printMenu(m, 0);
 
         if (keysDown() & KEY_A)
             break;
@@ -155,8 +156,22 @@ int main(int argc, char **argv)
         strcpy(consoleSignName, "dev");
     }
 
+    if (consoleSign == 0x00) {
+        strcpy(consoleType, "Retail");
+    } else if (consoleSign == 0x02) {
+        strcpy(consoleType, "Panda");
+    }/*
+
+	Do some check here to determine retail, panda, and debugger.
+	Then block debuggers due to different FW and a higher chance of messing stuff up without an easy fix.
+
+    else if (consoleSign == 0x02 || ) {
+		strcpy consoleType, "Debugger"
+    }
+    */
+
     videoInit();
-    
+
     srand(time(0));
     keysSetRepeat(25, 5);
     //_setupScreens();
@@ -172,7 +187,7 @@ int main(int argc, char **argv)
 
 	//setup sd card access
 	if (!fatInitDefault()) {
-		messageBox("fatInitDefault()...\x1B[31mFailed\n\x1B[40m\n\nSome features will not work.");
+		messageBox("fatInitDefault()...\x1B[31mFailed\n\x1B[30m\n\nSome features will not work.");
 		//return 0;
 	}
 
@@ -189,7 +204,7 @@ int main(int argc, char **argv)
 						if (keysDown() & KEY_SELECT )
 							break;
 					}
-					messageBox("nitroFSInit()...\x1B[31mFailed\n\x1B[40m\nSome features will not work.\n\nTry placing the SRL for your DSion your SD card root like this:\n\nSDMC:/TwlNandTool.prod.srl\nSDMC:/TwlNandTool.dev.srl\nSDMC:/ntrboot.nds\n");
+					messageBox("nitroFSInit()...\x1B[31mFailed\n\x1B[30m\nSome features will not work.\n\nTry placing the SRL for your DSion your SD card root like this:\n\nSDMC:/TwlNandTool.prod.srl\nSDMC:/TwlNandTool.dev.srl\nSDMC:/ntrboot.nds\n");
 				}
 			}
 		}
@@ -197,8 +212,11 @@ int main(int argc, char **argv)
 
 	//setup nand access
 	if (!fatMountSimple("nand", &io_dsi_nand)) {
-		messageBox("nand init \x1B[31mfailed\n\x1B[40m\n\nNAND must be repaired.");
+		messageBox("nand init \x1B[31mfailed\n\x1B[30m\n\nNAND must be repaired.");
 	}
+
+	clearScreen(cSUB);
+ 	clearScreen(cMAIN);
 
     int cursor = 0;
 
@@ -217,8 +235,15 @@ int main(int argc, char **argv)
                 nfMain();
                 break;
 
+            case MENUSTATE_NULL:
+                break;
+
             case MENUSTATE_TEST:
                 debug1();
+                break;
+
+            case MENUSTATE_TEST2:
+                debug2();
                 break;
 
             case MENUSTATE_EXIT:
@@ -246,22 +271,72 @@ int debug1(void) {
 	clearScreen(cSUB);
 
 	iprintf("\n>> Debug1");
-	iprintf("\n NandFirm write                 ");
+	iprintf("\n Show font                      ");
 	iprintf("\n--------------------------------");
 
-    printf("Opening NandFirm...\n");
-
-    FILE *file = fopen("nitro:/import/prod/menu-launcher.nand", "r");
-    if(file) {
-    	// First 0x200 of NandFirm is reserved for MBR
-        fseek(file, 0, SEEK_END);
-        int file_length = ftell(file);
-        fseek(file, 0x200, SEEK_SET);
-    	printf("Importing...\n");
-        good_nandio_write_file(0x200, file_length - ftell(file), file, false);
-        printf("Done!\n");
-        fclose(file);
+    for (int i = 0; i <= 200; i++) {
+        printf("%c ", (char)i);
     }
+
+	iprintf("\n\n  Please Push Select To Return  ");
+
+	while (true)
+	{
+		swiWaitForVBlank();
+		scanKeys();
+
+		if (keysDown() & KEY_SELECT )
+			break;
+	}
+}
+
+int debug2(void) {
+
+	clearScreen(cSUB);
+
+	iprintf("\n>> Debug1");
+	iprintf("\n Stupid AES-CTR BS              ");
+	iprintf("\n--------------------------------");
+
+	nand_ReadSectors(877, 1, sector_buf);
+	dsi_nand_crypt(sector_buf, sector_buf, 877, SECTOR_SIZE / AES_BLOCK_SIZE);
+
+    printf("\n     ");
+    for (int i = 452; i < SECTOR_SIZE; i++) {
+        printf("%02X", sector_buf[i]);
+        if ((i + 1) % 2 == 0) {
+            printf(" ");
+        }
+        if ((i - 443) % 8 == 0 && i != 444) {
+            printf("\n     ");
+        }
+    }
+
+	iprintf("\n\n  Read in");
+
+	while (true)
+	{
+		swiWaitForVBlank();
+		scanKeys();
+
+		if (keysDown() & KEY_SELECT )
+			break;
+	}
+
+	dsi_nand_crypt(sector_buf, sector_buf, 877, SECTOR_SIZE / AES_BLOCK_SIZE);
+
+    printf("\n     ");
+    for (int i = 444; i < SECTOR_SIZE; i++) {
+        printf("%02X", sector_buf[i]);
+        if ((i + 1) % 2 == 0) {
+            printf(" ");
+        }
+        if ((i - 443) % 8 == 0 && i != 444) {
+            printf("\n     ");
+        }
+    }
+
+	iprintf("\n\n  Read out");
 
 	while (true)
 	{

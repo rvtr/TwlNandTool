@@ -14,7 +14,7 @@
 #include "../main.h"
 #include "../video.h"
 
-u32 done=0;
+bool success = true;
 
 void death(char *message, u8 *buffer){
 	iprintf("\n%s\n", message);
@@ -34,28 +34,22 @@ enum {
 
 static int _nfMenu(int cursor)
 {
-	//top screen
-	clearScreen(cMAIN);
 
-	printf("\n\x1B[40mTwlNandTool Ver0.0");
-	printf("\n\nNAND repair tool by RMC/RVTR");
-	printf("\n\nMode: NandFirm");
-
-	//menu
-	Menu* m = newMenu();
-	setMenuHeader(m, "TwlNandTool");
+    Menu* m = newMenu();
+    setMenuHeader(m, "TwlNandTool");
+    setListHeader(m, "NandFirm");
 
 	char modeStr[32];
-	addMenuItem(m, "Check NandFirm", NULL, 0);
-	addMenuItem(m, "Import NandFirm", NULL, 0);
-	addMenuItem(m, "Import NandFirm (SDMC)", NULL, 0);
-	addMenuItem(m, "CID Info", NULL, 0);
-	addMenuItem(m, "Back", NULL, 0);
+	addMenuItem(m, "Check NandFirm", NULL, 0, "Check the stage2 (bootloader)\n version and type.");
+	addMenuItem(m, "Import NandFirm", NULL, 0, "Install the standard stage2\n (bootloader).\n\n This stage2 works normally,\n but it is an updated version:\n - v2265-9336 (prod)\n - v2725-9336 (dev)");
+	addMenuItem(m, "Import NandFirm (SDMC)", NULL, 0, "Install the SDMC Launcher\n stage2 (bootloader).\n\n SDMC will remove access to\n the firmware and SHOULD NOT\n BE USED unless otherwise\n told to do so.");
+	addMenuItem(m, "CID Info", NULL, 0, "Get NAND chip information.");
+	addMenuItem(m, "Back", NULL, 0, "Leave the NandFirm menu.");
 
 	m->cursor = cursor;
 
 	//bottom screen
-	printMenu(m);
+	printMenu(m, 1);
 
 	while (!programEnd)
 	{
@@ -63,7 +57,7 @@ static int _nfMenu(int cursor)
 		scanKeys();
 
 		if (moveCursor(m))
-			printMenu(m);
+			printMenu(m, 1);
 
 		if (keysDown() & KEY_A)
 			break;
@@ -130,10 +124,12 @@ int nandFirmRead(void) {
 	}
 	
 	printf("\n        Ver: ");
-    for (i = 0; i < 9; i++) {
+    for (i = 0; i < 10; i++) {
 
         if (sector_buf[i] == 0x0A) {
             printf("-");
+        } else if (sector_buf[i] == 0x0D) {
+            printf("");
         } else {
             printf("%c", sector_buf[i]);
         }
@@ -151,14 +147,14 @@ int nandFirmRead(void) {
 		if (keysDown() & KEY_SELECT )
 			break;
 	}
+	return success;
 }
 
-int nandFirmImport(bool sdmc) {
+bool nandFirmImport(bool sdmc) {
 
 	clearScreen(cSUB);
 
-	iprintf("\n>> Debug1");
-	iprintf("\n NandFirm write                 ");
+	iprintf("\n>> Import NandFirm (%s)       ", sdmc ? "sdmc" : "menu");
 	iprintf("\n--------------------------------");
 
     printf("Opening NandFirm...\n");
@@ -167,7 +163,7 @@ int nandFirmImport(bool sdmc) {
     snprintf(file_path, 100, "nitro:/import/%s/%s-launcher.nand", consoleSignName, sdmc ? "sdmc" : "menu");
     FILE *file = fopen(file_path, "r");
 
-    printf("%s\n", file_path);
+    printf("\n%s\n\n", file_path);
 
     if(file) {
     	// First 0x200 of NandFirm is reserved for MBR
@@ -178,7 +174,12 @@ int nandFirmImport(bool sdmc) {
         good_nandio_write_file(0x200, file_length - ftell(file), file, false);
         printf("Done!\n");
         fclose(file);
+    } else {
+    	success = false;
+		iprintf("\nNandFirm import failed!");
     }
+
+    iprintf("\n\n  Please Push Select To Return  ");
 
 	while (true)
 	{
@@ -188,6 +189,7 @@ int nandFirmImport(bool sdmc) {
 		if (keysDown() & KEY_SELECT )
 			break;
 	}
+	return success;
 }
 
 int nandPrintInfo(void) {
@@ -224,4 +226,5 @@ int nandPrintInfo(void) {
 		if (keysDown() & KEY_SELECT )
 			break;
 	}
+	return success;
 }

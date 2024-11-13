@@ -13,6 +13,7 @@ GIT_VER := $(shell git tag -l --points-at HEAD)
 else
 GIT_VER := $(shell git describe --abbrev=0 --tags)-$(shell git rev-parse --short=7 HEAD)
 endif
+BUILD_DATE := $(shell date +'%Y%m%d')
 
 # Ensure version.h exists
 ifeq (,$(wildcard include/version.h))
@@ -27,7 +28,7 @@ endif
 # Print new version if changed
 ifeq (,$(findstring $(GIT_VER), $(shell cat include/version.h)))
 $(shell echo -n $(GIT_VER) > ../../nitrofiles/version_twlnandtool)
-$(shell printf "#ifndef VERSION_H\n#define VERSION_H\n\n#define VERSION \"$(GIT_VER)\"\n\n#endif // VERSION_H\n" > include/version.h)
+$(shell printf "#ifndef VERSION_H\n#define VERSION_H\n\n#define VERSION \"$(GIT_VER)\"\n#define BUILD_DATE \"$(BUILD_DATE)\"\n\n#endif // VERSION_H\n" > include/version.h)
 endif
 
 #---------------------------------------------------------------------------------
@@ -41,8 +42,7 @@ BUILD		:=	build
 SOURCES		:=	src src/nand src/nand/polarssl src/nand/twltool
 INCLUDES	:=	include src/nand
 DATA		:=	../data
-GRAPHICS	:=  ../gfx
-
+GRAPHICS	:=	fonts
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
@@ -81,11 +81,14 @@ export ARM9ELF	:=	$(CURDIR)/$(TARGET).elf
 export DEPSDIR := $(CURDIR)/$(BUILD)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-					$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+					$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
+					$(foreach dir,$(GRAPHICS),$(CURDIR)/$(dir))
  
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
+BMPFILES 	:=	$(foreach dir,$(GRAPHICS),$(notdir $(wildcard $(dir)/*.bmp)))
+PNGFILES 	:=	$(foreach dir,$(GRAPHICS),$(notdir $(wildcard $(dir)/*.png)))
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
  
 #---------------------------------------------------------------------------------
@@ -105,7 +108,9 @@ endif
 export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
 					$(BMPFILES:.bmp=.o) \
 					$(PNGFILES:.png=.o) \
-					$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
+					$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o) \
+
+export HFILES := $(BMPFILES:.bmp=.h) $(PNGFILES:.png=.h) $(addsuffix .h,$(subst .,_,$(BINFILES)))
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
@@ -139,7 +144,7 @@ $(ARM9ELF)	:	$(OFILES)
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data 
 #---------------------------------------------------------------------------------
-%.bin.o	:	%.bin
+%.bin.o %_bin.h : %.bin
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
@@ -155,7 +160,7 @@ $(ARM9ELF)	:	$(OFILES)
 	grit $< -fts -o$*
 
 #---------------------------------------------------------------------------------
-%.s %.h   : %.png %.grit
+%.s %.h	: %.png %.grit
 #---------------------------------------------------------------------------------
 	grit $< -fts -o$*
 

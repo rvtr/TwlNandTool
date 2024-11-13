@@ -19,3 +19,4 @@ int fsMain(void);
 int readMbr(void);
 int repairMbr(void);
 int formatMain(void);
+int formatPhoto(void);

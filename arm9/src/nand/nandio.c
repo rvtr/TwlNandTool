@@ -7,6 +7,7 @@
 #include "sector0.h"
 #include "f_xy.h"
 #include "nandio.h"
+#include "../menu.h"
 #include "u128_math.h"
 
 /************************ Function Protoypes **********************************/
@@ -50,6 +51,8 @@ static u32 fat_sig_fix_offset = 0;
 
 static u32 sector_buf32[SECTOR_SIZE/sizeof(u32)];
 extern u8 *sector_buf = (u8*)sector_buf32;
+static u32 sector_buf232[SECTOR_SIZE/sizeof(u32)];
+extern u8 *sector_buf2 = (u8*)sector_buf232;
 static u32 file_buf32[BUFFER_SIZE/sizeof(u32)];
 extern u8 *file_buf = (u8*)file_buf32;
 
@@ -253,18 +256,23 @@ bool good_nandio_write(int inputAddress, int inputLength, u8 *buffer, bool crypt
 	int byteEndOffset = (inputAddress+inputLength) % SECTOR_SIZE;
 	int sectorEndNum = (inputAddress+inputLength) / SECTOR_SIZE;
 	int i;
-	if (inputLength <= 0x200) {
+	if (inputLength <= SECTOR_SIZE) {
 		// Handle a single sector write differently since it is unpredictable
 		nand_ReadSectors(sectorNum, 1, sector_buf);
 		memcpy(sector_buf, buffer, inputLength);
 		if (crypt == true) {
-			dsi_nand_crypt(sector_buf, sector_buf, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
+			dsi_nand_crypt(sector_buf, sector_buf, sectorNum * SECTOR_SIZE / AES_BLOCK_SIZE, SECTOR_SIZE / AES_BLOCK_SIZE);
 		}
 		nand_WriteSectors(sectorNum, 1, sector_buf);
 		//iprintf("\n%02X to %02X of %02X", byteOffset, inputLength, sectorNum);
 		//iprintf("\n%02X to %02X of buffer", 0, inputLength);
 	} else {
+		iprintf("\n ");
 		for (i = sectorNum; i < sectorEndNum + 1;) {
+			char currentPicto = downloadPlayLoading(i);
+			if (i % (sectorEndNum / 15) == 0) {
+				printf("\b%c", currentPicto);
+			}
 			// Back up sector
 		    nand_ReadSectors(i, 1, sector_buf);
 			if (i == sectorNum) {
@@ -286,12 +294,17 @@ bool good_nandio_write(int inputAddress, int inputLength, u8 *buffer, bool crypt
 			// I need to do a cmp here t0 save NAND writes
 			// Write sector
 			if (crypt == true) {
-				dsi_nand_crypt(buffer, buffer, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
+				// offset * SECTOR_SIZE / AES_BLOCK_SIZE
+				dsi_crypt_init((const u8*)consoleIDfixed, (const u8*)0x2FFD7BC, is3DS);
+				dsi_nand_crypt(sector_buf, sector_buf, i * SECTOR_SIZE / AES_BLOCK_SIZE, SECTOR_SIZE / AES_BLOCK_SIZE);
+				// Okay so the below one encrypted every other sector, failing the 1st, 3rd, 5th, etc.
+				//dsi_nand_crypt(sector_buf, sector_buf, inputAddress * SECTOR_SIZE / AES_BLOCK_SIZE, SECTOR_SIZE / AES_BLOCK_SIZE);
 			}
 			nand_WriteSectors(i, 1, sector_buf);
 			i++;
 			// Do some check to make sure it is not outside of NAND range.
 		}
+		iprintf("\b\x1B[1A");
 	}
 	return true;
 }
@@ -303,17 +316,22 @@ bool good_nandio_write_file(int inputAddress, int inputLength, FILE *fp, bool cr
 	int sectorEndNum = (inputAddress+inputLength) / SECTOR_SIZE;
 	int i;
     u8 buffer[SECTOR_SIZE];
-	if (inputLength <= 0x200) {
+	if (inputLength <= SECTOR_SIZE) {
 		// Handle a single sector write differently since it is unpredictable
 		nand_ReadSectors(sectorNum, 1, sector_buf);
 		fread(buffer, 1, inputLength, fp);
 		memcpy(sector_buf, buffer, inputLength);
 		if (crypt == true) {
-			dsi_nand_crypt(sector_buf, sector_buf, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
+			dsi_nand_crypt(sector_buf, sector_buf, sectorNum * SECTOR_SIZE / AES_BLOCK_SIZE, SECTOR_SIZE / AES_BLOCK_SIZE);
 		}
 		nand_WriteSectors(sectorNum, 1, sector_buf);
 	} else {
+		iprintf("\n ");
 		for (i = sectorNum; i < sectorEndNum + 1;) {
+			char currentPicto = downloadPlayLoading(i);
+			if (i % (sectorEndNum / 15) == 0) {
+				printf("\b%c", currentPicto);
+			}
 			// Back up sector
 		    nand_ReadSectors(i, 1, sector_buf);
 
@@ -333,12 +351,13 @@ bool good_nandio_write_file(int inputAddress, int inputLength, FILE *fp, bool cr
 			// I need to do a cmp here t0 save NAND writes
 			// Write sector
 			if (crypt == true) {
-				dsi_nand_crypt(buffer, buffer, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
+				dsi_nand_crypt(sector_buf, sector_buf, i * SECTOR_SIZE / AES_BLOCK_SIZE, SECTOR_SIZE / AES_BLOCK_SIZE);
 			}
 			nand_WriteSectors(i, 1, sector_buf);
 			i++;
 			// Do some check to make sure it is not outside of NAND range.
 		}
+		iprintf("\b\x1B[1A");
 	}
 	return true;
 }

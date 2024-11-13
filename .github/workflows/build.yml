@@ -15,7 +15,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: devkitpro/devkitarm
+    # Something something old releases being hostile and damaging, boo hoo dkp. Maybe don't make extremely breaking changes.
+    container: devkitpro/devkitarm:20241104
     name: Build with Docker using devkitARM
     steps:
       - name: Checkout repo
