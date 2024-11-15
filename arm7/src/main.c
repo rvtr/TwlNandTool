@@ -188,6 +188,7 @@ int main()
 		fifoSendValue32(FIFO_USER_03, batteryStatus);
 
 		fifoSendValue32(FIFO_USER_01, *(vu8*)0x04004024);
+
 		swiWaitForVBlank();
 	}
 

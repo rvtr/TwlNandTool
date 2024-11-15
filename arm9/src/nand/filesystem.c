@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <nds/arm9/nand.h>
+#include <nds/disc_io.h>
 #include "f_xy.h"
 #include "twltool/dsi.h"
 #include "nandio.h"
@@ -15,6 +16,9 @@
 #include "../main.h"
 #include "../video.h"
 #include "../menu.h"
+#include "../lib/libfat/include/fat.h"
+
+extern bool nand_Startup();
 
 // Master Boot Records
 u8 mbrSamsung[68] = {
@@ -50,54 +54,21 @@ u8 vbrPhoto[54] = {
 	0x20, 0x20, 0x20, 0x20, 0x20, 0x20
 };
 
-// File tables for /sys/ folder and HWInfo secure
-// Why? HWInfo is always at one of 3 set offsets. I use those offsets for HWInfo recovery.
-// We will copy over these file tables to ensure the offsets stay the same.
-
-// No idea what this is but I need it lol
-u8 fileTable1[16] = {
-	0xF8, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0xFF, 0xFF, 0x00, 0x00
-};
-
-// File table for /sys/ folder
-u8 fileTable2[64] = {
-	0x41, 0x73, 0x00, 0x79, 0x00, 0x73, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x0F,
-	0x00, 0x54, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-	0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x53, 0x59, 0x53, 0x20,
-	0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x10, 0x00, 0x00, 0x00, 0x00,
-	0x21, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21, 0x28, 0x02, 0x00,
-	0x00, 0x00, 0x00, 0x00
-};
-
-// File table for HWInfo
-u8 fileTable3[192] = {
-	0x2E, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x30,
-	0x00, 0x00, 0x00, 0x00, 0x21, 0x28, 0x00, 0x00, 0x00, 0x00, 0x75, 0x02,
-	0x64, 0x59, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2E, 0x2E, 0x20, 0x20,
-	0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x10, 0x00, 0x00, 0x00, 0x00,
-	0x21, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21, 0x28, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0xE5, 0x6C, 0x00, 0x6F, 0x00, 0x67, 0x00, 0x00,
-	0x00, 0xFF, 0xFF, 0x0F, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
-	0xE5, 0x4F, 0x47, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
-	0x00, 0x00, 0x01, 0x00, 0x21, 0x28, 0x64, 0x59, 0x00, 0x00, 0x01, 0x00,
-	0x21, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x48, 0x00, 0x57,
-	0x00, 0x49, 0x00, 0x4E, 0x00, 0x46, 0x00, 0x0F, 0x00, 0x9C, 0x4F, 0x00,
-	0x5F, 0x00, 0x53, 0x00, 0x2E, 0x00, 0x64, 0x00, 0x61, 0x00, 0x00, 0x00,
-	0x74, 0x00, 0x00, 0x00, 0x48, 0x57, 0x49, 0x4E, 0x46, 0x4F, 0x5F, 0x53,
-	0x44, 0x41, 0x54, 0x20, 0x00, 0x00, 0x01, 0x00, 0x21, 0x28, 0x64, 0x59,
-	0x00, 0x00, 0x50, 0x02, 0x64, 0x59, 0x06, 0x00, 0x00, 0x40, 0x00, 0x00
-};
-
 static size_t i;
 
 enum {
-	READ_MBR,
-	REPAIR_MBR,
-	FORMAT_MAIN,
-	FORMAT_PHOTO,
-	BACK
+	FSMENU_READ_MBR,
+	FSMENU_REPAIR_MBR,
+	FSMENU_FORMAT_MAIN,
+	FSMENU_FORMAT_PHOTO,
+  	FSMENU_NULL,
+	FSMENU_MOUNT_MAIN,
+	FSMENU_UNMOUNT_MAIN,
+	FSMENU_MOUNT_NITRO,
+	FSMENU_NULL2,
+	FSMENU_FILETEST_MAIN,
+	FSMENU_FILETEST_NITRO,
+	FSMENU_BACK
 };
 
 static int _fsMenu(int cursor)
@@ -112,6 +83,13 @@ static int _fsMenu(int cursor)
 	addMenuItem(m, "Repair MBR", NULL, 0, "Repair the Master Boot Record.");
 	addMenuItem(m, "Format TWL_MAIN", NULL, 0, "Format the partition where the\n firmware, apps, and saves are\n installed.\n\n THIS WILL ERASE EVERYTHING.");
 	addMenuItem(m, "Format TWL_PHOTO", NULL, 0, "Format the partition where\n photos are stored.\n\n THIS WILL ERASE EVERYTHING.");
+	addMenuItem(m, "------------------", NULL, 0, "");
+	addMenuItem(m, "Mount TWL_MAIN", NULL, 0, "Mount the TWL_MAIN partition.");
+	addMenuItem(m, "Unmount TWL_MAIN", NULL, 0, "Unmount the TWL_MAIN partition");
+	addMenuItem(m, "Mount NitroFS", NULL, 0, "Mount the ROM filesystem.");
+	addMenuItem(m, "------------------", NULL, 0, "");
+	addMenuItem(m, "File test TWL_MAIN", NULL, 0, "Attempt to make/delete dummy\n file on NAND.");
+	addMenuItem(m, "File test NitroFS", NULL, 0, "Attempt to read file in\n NitroFS.");
 	addMenuItem(m, "Back", NULL, 0, "Leave the FileSystem menu.");
 
 	m->cursor = cursor;
@@ -149,23 +127,49 @@ int fsMain(void)
 		switch (cursor)
 		{
 
-			case READ_MBR:
+			case FSMENU_READ_MBR:
 				readMbr();
 				break;
 
-			case REPAIR_MBR:
-				repairMbr();
+			case FSMENU_REPAIR_MBR:
+				repairMbr(false);
 				break;
 
-			case FORMAT_MAIN:
+			case FSMENU_FORMAT_MAIN:
 				formatMain();
 				break;
 
-			case FORMAT_PHOTO:
+			case FSMENU_FORMAT_PHOTO:
 				formatPhoto();
 				break;
 
-			case BACK:
+			case FSMENU_NULL:
+				break;
+
+			case FSMENU_MOUNT_MAIN:
+				mountMain();
+				break;
+
+			case FSMENU_UNMOUNT_MAIN:
+				unmountMain();
+				break;
+
+			case FSMENU_MOUNT_NITRO:
+				mountNitroFS();
+				break;
+
+			case FSMENU_NULL2:
+				break;
+
+			case FSMENU_FILETEST_MAIN:
+				filetestMain();
+				break;
+
+			case FSMENU_FILETEST_NITRO:
+				filetestNitro();
+				break;
+
+			case FSMENU_BACK:
 				programEnd = true;
 				break;
 		}
@@ -176,15 +180,20 @@ int fsMain(void)
 	return 0;
 }
 
-int readMbr(void) {
+bool readMbr(void) {
+	success = true;
 	clearScreen(cSUB);
 
-	nand_ReadSectors(0, 1, sector_buf);
-	dsi_crypt_init((const u8*)consoleIDfixed, (const u8*)0x2FFD7BC, is3DS);
-	dsi_nand_crypt(sector_buf, sector_buf, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
-
 	iprintf("\n>> MBR (Master Boot Record)     ");
-	iprintf("\n--------------------------------");	
+	iprintf("\n--------------------------------");
+
+    if(nand_ReadSectors(0, 1, sector_buf) == false) {
+    	iprintf("\nCouldn't read NAND!\n");
+    	success = false;
+    }
+
+    dsi_nand_crypt(sector_buf, sector_buf, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
+
     printf("\n     ");
     for (i = 444; i < SECTOR_SIZE; i++) {
         printf("%02X", sector_buf[i]);
@@ -197,124 +206,103 @@ int readMbr(void) {
     }
     if(parse_mbr(sector_buf, is3DS)) {
     	iprintf("\n\n    \x1B[31mERROR!\x1B[30m MBR is corrupted.");
+    	success = false;
     }
 
-	iprintf("\n\n  Please Push Select To Return  ");
-
-	while (true)
-	{
-		swiWaitForVBlank();
-		scanKeys();
-
-		if (keysDown() & KEY_SELECT )
-			break;
-	}
+	exitFunction();
+	return success;
 }
 
-int repairMbr(void) {
+bool repairMbr(bool autofix) {
+	success = true;
 	clearScreen(cSUB);
 
 	iprintf("\n>> Repair Corrupted MBR         ");
 	iprintf("\n--------------------------------");	
 
-    if(!parse_mbr(sector_buf, is3DS)) {
-		if (choicePrint("NAND does not look corrupt.\nRepair anyway?") == NO) {
-			return 0;
+	if (parse_mbr(sector_buf, is3DS) || nandMounted == false) {
+	    if(!parse_mbr(sector_buf, is3DS) && autofix == false) {
+			if (choicePrint("NAND does not look corrupt.\nRepair anyway?") == NO) {
+				exitFunction();
+				return success;
+			}
 		}
-	}
 
-    iprintf("\nNAND type : %s (0x%02X)", nandInfo.NAND_PNM, nandInfo.NAND_MID);
+	    iprintf("\nNAND type : %s (0x%02X)", nandInfo.NAND_PNM, nandInfo.NAND_MID);
 
-    memset(sector_buf, 0, 444);
-    if (nandInfo.NAND_MID == 0x15) {
-		memcpy(sector_buf + 444, mbrSamsung, sizeof(mbrSamsung));
-    } else if (nandInfo.NAND_MID == 0xFE) {
-		memcpy(sector_buf + 444, mbrSt, sizeof(mbrSt));
-    }
+	    memset(sector_buf, 0, 444);
+	    if (nandInfo.NAND_MID == 0x15) {
+			memcpy(sector_buf + 444, mbrSamsung, sizeof(mbrSamsung));
+	    } else if (nandInfo.NAND_MID == 0xFE) {
+			memcpy(sector_buf + 444, mbrSt, sizeof(mbrSt));
+	    }
 
-    // Write new MBR, encrypt it, then save it.
-    // Afterwards we read it back from NAND and decrypt to confirm it works.
-    //
-    // No need to do safety checks before writing since corrupted MBR is already broken.
-    iprintf("\nWriting new MBR...");
+	    // Write new MBR, encrypt it, then save it.
+	    // Afterwards we read it back from NAND and decrypt to confirm it works.
+	    //
+	    // No need to do safety checks before writing since corrupted MBR is already broken.
+	    iprintf("\nWriting new MBR...");
 
-	dsi_nand_crypt(sector_buf, sector_buf, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
-	nand_WriteSectors(0, 1, sector_buf);
+		dsi_nand_crypt(sector_buf, sector_buf, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
+		nand_WriteSectors(0, 1, sector_buf);
 
-    iprintf("\nTesting new MBR...");
+	    iprintf("\nTesting new MBR...");
 
-	nand_ReadSectors(0, 1, sector_buf);
-	dsi_nand_crypt(sector_buf, sector_buf, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
+		nand_ReadSectors(0, 1, sector_buf);
+		dsi_nand_crypt(sector_buf, sector_buf, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
 
-    if(parse_mbr(sector_buf, is3DS)) {
-    	iprintf("\n\n    \x1B[31mERROR!\x1B[30m Failed to fix MBR.");
+	    if(parse_mbr(sector_buf, is3DS)) {
+	    	iprintf("\n\n    \x1B[31mERROR!\x1B[30m Failed to fix MBR.");
+	    	success = false;
+	    } else {
+	    	iprintf("\n\x1B[32mThe new MBR passed!\x1B[30m");
+    	}
     } else {
-    	iprintf("\n\x1B[32mThe new MBR passed!\x1B[30m");
+		iprintf("\nNAND is currently mounted!\n\nSkipping MBR repair since\nthe FS had no issues.");
     }
 
-	iprintf("\n\n  Please Push Select To Return  ");
-
-	while (true)
-	{
-		swiWaitForVBlank();
-		scanKeys();
-
-		if (keysDown() & KEY_SELECT )
-			break;
-	}
+	exitFunction();
+	return success;
 }
 
-int formatMain(void) {
+bool formatMain(void) {
+	success = true;
 	clearScreen(cSUB);
 
 	iprintf("\n>> Format TWL_MAIN              ");
 	iprintf("\n--------------------------------");
 
-	iprintf("\n\nWriting VBR...");
-	memset(file_buf, 0, 0x200);
-	// Write the first 54 bytes, then pad to 0x1FE. Finally write 0x55AA
-	memcpy(file_buf, vbrMain, sizeof(vbrMain));
-    memset(file_buf + sizeof(vbrMain), 0, (BUFFER_SIZE - sizeof(vbrMain) - 2));
-    memset(file_buf + SECTOR_SIZE - 2, 0x55, 1);
-    memset(file_buf + SECTOR_SIZE - 1, 0xAA, 1);
-	good_nandio_write(0x10EE00, 0x200, file_buf, true);
-	iprintf("\nClearing file tables...");
-	memset(file_buf, 0, 0x600);
-	for (i = 0; i < 0x3d8; i++) {
-		good_nandio_write(0x10EE00 + 0x200 + (0x600 * i), 0x600, file_buf, true);
+	if (nandMounted == false) {
+		iprintf("\nWriting VBR...");
+		memset(file_buf, 0, 0x200);
+		// Write the first 54 bytes, then pad to 0x1FE. Finally write 0x55AA
+		memcpy(file_buf, vbrMain, sizeof(vbrMain));
+	    memset(file_buf + sizeof(vbrMain), 0, (BUFFER_SIZE - sizeof(vbrMain) - 2));
+	    memset(file_buf + SECTOR_SIZE - 2, 0x55, 1);
+	    memset(file_buf + SECTOR_SIZE - 1, 0xAA, 1);
+		good_nandio_write(0x10EE00, 0x200, file_buf, true);
+		iprintf("\nClearing file tables...");
+		memset(file_buf, 0, 0x600);
+		for (i = 0; i < 0x3d8; i++) {
+			good_nandio_write(0x10EE00 + 0x200 + (0x600 * i), 0x600, file_buf, true);
+		}
+		iprintf("\nAll done!");
+	} else {
+		iprintf("\nNAND is currently mounted!\n\nSkipping TWL_MAIN format since\nthe FS had no issues.");
 	}
-	iprintf("\nMaking new file tables...");
-	memset(file_buf, 0, 0x200);
-	memcpy(file_buf, fileTable1, sizeof(fileTable1));
-	good_nandio_write(0x115800, sizeof(fileTable1), file_buf, true);
-	memset(file_buf, 0, 0x200);
-	memcpy(file_buf, fileTable2, sizeof(fileTable2));
-	good_nandio_write(0x11C000, sizeof(fileTable2), file_buf, true);
-	memset(file_buf, 0, 0x200);
-	memcpy(file_buf, fileTable3, sizeof(fileTable3));
-	good_nandio_write(0x120000, sizeof(fileTable3), file_buf, true);
 
-	iprintf("\nAll done!");
-
-	iprintf("\n\n  Please Push Select To Return  ");
-
-	while (true)
-	{
-		swiWaitForVBlank();
-		scanKeys();
-
-		if (keysDown() & KEY_SELECT )
-			break;
-	}	
+	exitFunction();
+	return success;
 }
 
-int formatPhoto(void) {
+bool formatPhoto(void) {
+	success = true;
 	clearScreen(cSUB);
 
 	iprintf("\n>> Format TWL_PHOTO             ");
 	iprintf("\n--------------------------------");
 
-	iprintf("\n\nWriting VBR...");
+	iprintf("\nWriting VBR...");
 	memset(file_buf, 0, 0x200);
 	// Write the first 54 bytes, then pad to 0x1FE. Finally write 0x55AA
 	memcpy(file_buf, vbrPhoto, sizeof(vbrPhoto));
@@ -330,14 +318,208 @@ int formatPhoto(void) {
 
 	iprintf("\nAll done!");
 
-	iprintf("\n\n  Please Push Select To Return  ");
+	exitFunction();
+	return success;
+}
 
-	while (true)
-	{
-		swiWaitForVBlank();
-		scanKeys();
+bool mountMain(void) {
+	success = true;
+	clearScreen(cSUB);
 
-		if (keysDown() & KEY_SELECT )
-			break;
-	}	
+	iprintf("\n>> Mount TWL_MAIN               ");
+	iprintf("\n--------------------------------");
+
+	if (nandMounted == true) {
+		if (!agingMode) {
+			agingMode = true;
+			unmountMain();
+			agingMode = false;
+		} else {
+			unmountMain();
+		}
+	}
+
+	clearScreen(cSUB);
+	iprintf("\n>> Mount TWL_MAIN               ");
+	iprintf("\n--------------------------------");
+
+	if (!nandio_startup()) {
+		iprintf("\nFailed startup!");
+		success = false;
+	}
+	if (success == true && !fatMountSimple("nand", &io_dsi_nand, true)) {
+		iprintf("\n\x1B[31mMount TWL_MAIN failed!\n\x1B[30m\nNAND must be repaired. Try...\n - Fixing MBR\n - Formatting TWL_MAIN");
+		success = false;
+	} else if (success == true) {
+		iprintf("\nTWL_MAIN mounted okay.");
+		nandio_unlock_writing();
+		nandMounted = true;
+	}
+
+	exitFunction();
+	return success;
+}
+
+bool unmountMain(void) {
+	success = true;
+	clearScreen(cSUB);
+
+	iprintf("\n>> Unmount TWL_MAIN             ");
+	iprintf("\n--------------------------------");
+
+	if (nandMounted == true) {
+		iprintf("\nUnmounting NAND...");
+		fatUnmount("nand");
+		nandMounted = false;
+		sdMounted = false;
+
+		// I just don't want to interrupt the startup aging test
+		if (!agingMode) {
+			agingMode = true;
+			success = mountNitroFS();
+			agingMode = false;
+		} else {
+			success = mountNitroFS();
+		}
+
+		clearScreen(cSUB);
+		iprintf("\n>> Umount TWL_MAIN              ");
+		iprintf("\n--------------------------------");
+
+		if (success) {
+			iprintf("\nTWL_MAIN unmounted okay.");
+		} else {
+			iprintf("\nFailed to mount TWL_MAIN!");
+		}
+
+	} else {
+		iprintf("\nNAND not mounted!\nDoing nothing.");
+	}
+
+	exitFunction();
+	return success;
+}
+
+bool mountNitroFS(void) {
+	success = true;
+	clearScreen(cSUB);
+
+	iprintf("\n>> Mount NitroFS                ");
+	iprintf("\n--------------------------------");
+
+	if (sdMounted == false && !fatInitDefault()) {
+		iprintf("\nSD card not mounted!");
+		success = false;
+	} else {
+		iprintf("\nSD card mounted okay.");
+		sdMounted = true;
+	}
+
+	if(!nitroFSInit("TwlNandTool.prod.srl") || !nitroFSGood()) {
+		if(!nitroFSInit("TwlNandTool.dev.srl") || !nitroFSGood()) {
+			if(!nitroFSInit("ntrboot.nds") || !nitroFSGood()) {
+				iprintf("\x1B[31mFailed to mount NitroFS!\n\x1B[30m\nSome features will not work.\n\nTry placing the SRL for your DSiat one of these locations:\n\nSDMC:/TwlNandTool.prod.srl\nSDMC:/TwlNandTool.dev.srl\nSDMC:/ntrboot.nds\n");
+				success = false;
+			}
+		}
+	}
+
+	if (success) {
+		iprintf("\nNitroFS mounted okay.");
+	}
+
+	exitFunction();
+	return success;
+}
+
+bool filetestMain(void) {
+	success = true;
+	clearScreen(cSUB);
+
+	iprintf("\n>> Read TWL_MAIN file           ");
+	iprintf("\n--------------------------------");
+
+	if (nandMounted == true) {
+	    printf("\nMaking temp folder...");
+		mkdir("nand:/tmp", 0777);
+
+	    printf("\nOpening test file...\n");
+
+	    char file_path[100];
+	    snprintf(file_path, 100, "nand:/tmp/test.bin");
+	    FILE *file = fopen(file_path, "wb");
+	    printf("\n%s\n", file_path);
+	    if(file) {
+		    iprintf("\nWrite test...");
+		    memset(sector_buf, 0, SECTOR_SIZE);
+			memcpy(sector_buf + 444, mbrSamsung, sizeof(mbrSamsung));
+			fwrite(sector_buf, 1, SECTOR_SIZE, file);
+	        fclose(file);
+		    iprintf("\nFile closed.");
+	    } else {
+	    	success = false;
+			iprintf("\nFile failed to open!");
+	    }
+
+	    memset(sector_buf, 0, SECTOR_SIZE);
+
+		iprintf("\nOpening file...");
+	    FILE *file2 = fopen(file_path, "rb");
+	    if(file2) {
+		    iprintf("\nRead test...");
+	        fread(sector_buf, 1, SECTOR_SIZE, file2);
+		    if(parse_mbr(sector_buf, is3DS)) {
+		    	iprintf("\n\n    \x1B[31mERROR!\x1B[30m File did not save!");
+		    	success = false;
+		    } else {
+		    	iprintf("\n\x1B[32mThe file is okay!\x1B[30m");
+	    	}
+	        fclose(file2);
+		    iprintf("\nFile closed.");
+	    } else {
+	    	success = false;
+			iprintf("\nFile failed to open!");
+	    }
+	} else {
+		success = false;
+		iprintf("\nTWL_MAIN is not mounted!");
+	}
+
+	exitFunction();
+	return success;
+}
+
+bool filetestNitro(void) {
+	success = true;
+	clearScreen(cSUB);
+
+	iprintf("\n>> Read NitroFS file            ");
+	iprintf("\n--------------------------------");
+
+    printf("\nOpening test file...\n");
+
+    char file_path[100];
+    snprintf(file_path, 100, "nitro:/version_twlnandtool");
+    FILE *file = fopen(file_path, "r");
+    printf("\n%s\n", file_path);
+    if(file) {
+        fseek(file, 0, SEEK_END);
+        int length = ftell(file);
+        fseek(file, 0, SEEK_SET);
+
+        char *version = (char *)malloc((length) * sizeof(char));
+        version[length] = '\0'; 
+
+        fread(version, 1, length, file);
+
+        printf("\n%s\n", version);
+        fclose(file);
+
+		iprintf("\nFile opened okay.");
+    } else {
+    	success = false;
+		iprintf("\nFile failed to open!");
+    }
+	exitFunction();
+	return success;
 }

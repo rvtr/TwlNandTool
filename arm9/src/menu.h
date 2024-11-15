@@ -40,5 +40,5 @@ void printMenu(Menu* m, int level);
 bool moveCursor(Menu* m);
 
 char downloadPlayLoading(int number);
-
+void exitFunction();
 #endif

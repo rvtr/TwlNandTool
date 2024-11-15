@@ -10,6 +10,11 @@
 #include "video.h"
 #include "nitrofs.h"
 
+extern bool nandMounted;
+extern bool sdMounted;
+extern bool agingMode;
+extern bool success;
+
 extern bool programEnd;
 extern bool sdnandMode;
 extern bool unlaunchFound;
@@ -27,6 +32,7 @@ void backupMenu();
 void testMenu();
 int debug1();
 int debug2();
+int debug3();
 
 extern PrintConsole topScreen;
 extern PrintConsole bottomScreen;

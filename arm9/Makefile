@@ -39,8 +39,8 @@ endif
 # all directories are relative to this makefile
 #---------------------------------------------------------------------------------
 BUILD		:=	build
-SOURCES		:=	src src/nand src/nand/polarssl src/nand/twltool
-INCLUDES	:=	include src/nand
+SOURCES		:=	src src/nand src/nand/polarssl src/nand/twltool src/lib/libfat/source
+INCLUDES	:=	include src/nand src/lib/libfat/include
 DATA		:=	../data
 GRAPHICS	:=	fonts
 #---------------------------------------------------------------------------------
@@ -63,7 +63,7 @@ LDFLAGS	=	-specs=ds_arm9.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lfilesystem -lfat -lnds9
+LIBS	:=	-lfilesystem -lnds9
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib

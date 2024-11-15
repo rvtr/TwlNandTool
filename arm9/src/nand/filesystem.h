@@ -16,7 +16,13 @@
 #include "../menu.h"
 
 int fsMain(void);
-int readMbr(void);
-int repairMbr(void);
-int formatMain(void);
-int formatPhoto(void);
+bool readMbr(void);
+bool repairMbr(bool autofix);
+bool formatMain(void);
+bool formatPhoto(void);
+bool mountMain(void);
+bool unmountMain(void);
+bool mountNitroFS(void);
+
+bool filetestMain(void);
+bool filetestNitro(void);

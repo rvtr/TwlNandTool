@@ -450,7 +450,7 @@ bool nitroFSGood(void) {
 
         fread(version, 1, length, file);
 
-        printf("VER |%s|%s|\n", version, VERSION);
+        //printf("VER |%s|%s|\n", version, VERSION);
         nitroFSGood = (strcmp(version, VERSION) == 0);
         fclose(file);
     }

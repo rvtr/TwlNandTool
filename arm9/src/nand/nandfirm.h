@@ -16,9 +16,8 @@
 void wait(int ticks);
 void death(char *message, u8 *buffer);
 
-
 int nfMain(void);
 
-int nandFirmRead(void);
+bool nandFirmRead(void);
 bool nandFirmImport(bool sdmc);
-int nandPrintInfo(void);
+bool nandPrintInfo(void);

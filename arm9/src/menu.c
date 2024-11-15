@@ -339,10 +339,33 @@ bool moveCursor(Menu* m)
 	return !(lastCursor == m->cursor);
 }
 
+
+void wait(int ticks){
+	while(ticks--)swiWaitForVBlank();
+}
+
 char downloadPlayLoading(int number) {
 	char pictoload[] = {(char)142, (char)143, (char)144, (char)145, (char)146, (char)147, (char)148, (char)149};
     static int counter = 0;
 	
 	counter = (counter % 7) + 1;
 	return pictoload[counter];
+}
+
+void exitFunction() {
+	if (agingMode == false) {
+		iprintf("\n\n  Please Push Select To Return  ");
+		while (true)
+		{
+			swiWaitForVBlank();
+			scanKeys();
+
+			if (keysDown() & KEY_SELECT )
+				break;
+		}
+	} else {
+		wait(50);
+	}
+	clearScreen(cSUB);
+	// Restore screen memory here
 }

@@ -14,8 +14,6 @@
 #include "../main.h"
 #include "../video.h"
 
-bool success = true;
-
 void death(char *message, u8 *buffer){
 	iprintf("\n%s\n", message);
 	free(buffer);
@@ -108,8 +106,8 @@ int nfMain(void)
 	return 0;
 }
 
-int nandFirmRead(void) {
-
+bool nandFirmRead(void) {
+	success = true;
 	clearScreen(cSUB);
 
 	iprintf("\n>> NandFirm Version Checker     ");
@@ -117,11 +115,7 @@ int nandFirmRead(void) {
 
 	int fail=0;
 		
-	// Sectors are 0x200 each, this is sector 626 OR offset 0x4E400
-	// nand_ReadSectors(<start at sector>, <number of sectors to read>, <save sectors to>)
-	if(nand_ReadSectors(626, 1, sector_buf) == false){
-		iprintf("Nand read error");
-	}
+	nand_ReadSectors(626, 1, sector_buf);
 	
 	printf("\n        Ver: ");
     for (i = 0; i < 10; i++) {
@@ -136,28 +130,18 @@ int nandFirmRead(void) {
     }
     printf("\n");
 
-	iprintf("\n\n\n  Please Push Select To Return  ");
-
-
-	while (true)
-	{
-		swiWaitForVBlank();
-		scanKeys();
-
-		if (keysDown() & KEY_SELECT )
-			break;
-	}
+	exitFunction();
 	return success;
 }
 
 bool nandFirmImport(bool sdmc) {
-
+	success = true;
 	clearScreen(cSUB);
 
 	iprintf("\n>> Import NandFirm (%s)       ", sdmc ? "sdmc" : "menu");
 	iprintf("\n--------------------------------");
 
-    printf("Opening NandFirm...\n");
+    printf("\nOpening NandFirm...\n");
 
     char file_path[100];
     snprintf(file_path, 100, "nitro:/import/%s/%s-launcher.nand", consoleSignName, sdmc ? "sdmc" : "menu");
@@ -179,21 +163,12 @@ bool nandFirmImport(bool sdmc) {
 		iprintf("\nNandFirm import failed!");
     }
 
-    iprintf("\n\n  Please Push Select To Return  ");
-
-	while (true)
-	{
-		swiWaitForVBlank();
-		scanKeys();
-
-		if (keysDown() & KEY_SELECT )
-			break;
-	}
-	return success;
+    exitFunction();
+    return success;
 }
 
-int nandPrintInfo(void) {
-
+bool nandPrintInfo(void) {
+	success = true;
 	extern nandData nandInfo;
 	clearScreen(cSUB);
 	iprintf("\n>> CID (Card IDentification)");
@@ -216,15 +191,7 @@ int nandPrintInfo(void) {
             printf("\n     ");
         }
     }
-	iprintf("\n\n\n  Please Push Select To Return  ");
 
-	while (true)
-	{
-		swiWaitForVBlank();
-		scanKeys();
-
-		if (keysDown() & KEY_SELECT )
-			break;
-	}
+	exitFunction();
 	return success;
 }

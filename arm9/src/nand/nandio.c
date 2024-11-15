@@ -119,10 +119,6 @@ void nandGetInfo(void) {
 
 bool nandio_startup()
 {
-	if (!nand_Startup())
-	{
-		return false;
-	}
 
 	nand_ReadSectors(0, 1, sector_buf);
 	is3DS = parse_ncsd(sector_buf) == 0;
@@ -250,6 +246,7 @@ bool nandio_write_sectors(sec_t offset, sec_t len, const void *buffer)
 }
 
 bool good_nandio_write(int inputAddress, int inputLength, u8 *buffer, bool crypt) {
+	nandWritten = true;
 	// Sorry lol I just don't want to deal with sector calculation
 	int byteOffset = inputAddress % SECTOR_SIZE;
 	int sectorNum = inputAddress / SECTOR_SIZE;
@@ -310,6 +307,7 @@ bool good_nandio_write(int inputAddress, int inputLength, u8 *buffer, bool crypt
 }
 
 bool good_nandio_write_file(int inputAddress, int inputLength, FILE *fp, bool crypt) {
+	nandWritten = true;
 	int byteOffset = inputAddress % SECTOR_SIZE;
 	int sectorNum = inputAddress / SECTOR_SIZE;
 	int byteEndOffset = (inputAddress+inputLength) % SECTOR_SIZE;
@@ -381,11 +379,11 @@ bool nandio_shutdown()
 		u8 stagingLevels = sector_buf[0x10];
 		u8 reservedSectors = sector_buf[0x0E];
 		u16 sectorsPerFatCopy = sector_buf[0x16] | ((u16)sector_buf[0x17] << 8);
-	/*
+		/*
 		iprintf("[i] Staging for %i FAT copies\n",stagingLevels);
 		iprintf("[i] Stages starting at %i\n",reservedSectors);
 		iprintf("[i] %i sectors per stage\n",sectorsPerFatCopy);
-	*/
+		*/
 		if (stagingLevels > 1)
 		{
 			for (u32 sector = 0;sector < sectorsPerFatCopy; sector++)
