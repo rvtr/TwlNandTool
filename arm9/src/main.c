@@ -278,16 +278,21 @@ int debug3(void) {
 	iprintf("\n>> NAND AGING tester            ");
 	iprintf("\n--------------------------------");
 
-	nandPrintInfo();
-	if (!nandFirmImport(true)) {
+    if (success == true && !nandPrintInfo()) {
         success = false;
     }
-    nandFirmRead();
-	if (!repairMbr(true)) {
+	if (success == true && !nandFirmImport(true)) {
         success = false;
     }
-    readMbr();
-
+    if (success == true && !nandFirmRead()) {
+        success = false;
+    }
+	if (success == true && !repairMbr(true)) {
+        success = false;
+    }
+	if (success == true && !readMbr()) {
+        success = false;
+	}
 	if (success == true && !mountMain()) {
 		if (!formatMain() && !formatPhoto() && !mountMain()) {
 			iprintf("\nNAND mount failed!");
@@ -300,19 +305,27 @@ int debug3(void) {
 	} else {
 		nandMounted = true;
 	}
-	filetestMain();
-	unmountMain();
-	filetestNitro();
+	if (success == true && !filetestMain()) {
+        success = false;
+	}
+	if (success == true && !unmountMain()) {
+        success = false;
+	}
+	if (success == true && !filetestNitro()) {	
+        success = false;
+	}
 
 	agingMode = false;
-
+	clearScreen(cSUB);
 	iprintf("\n>> NAND AGING tester result     ");
 	iprintf("\n--------------------------------");
 
 	if (success == true) {
 		iprintf("\nAll tests passed okay.");
+		setBackdropColorSub(0x1FE0);
 	} else {
 		iprintf("\nTests failed!");
+		setBackdropColorSub(0x00FF);
 	}
 
 	exitFunction();

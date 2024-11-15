@@ -140,7 +140,6 @@ bool randomConfirmBox(char* message)
 
 void messageBox(char* message)
 {
-	clearScreen(cSUB);
 	messagePrint(message);
 }
 

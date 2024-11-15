@@ -367,5 +367,6 @@ void exitFunction() {
 		wait(50);
 	}
 	clearScreen(cSUB);
+	setBackdropColorSub(0xFFFF);
 	// Restore screen memory here
 }

@@ -408,17 +408,17 @@ bool mountNitroFS(void) {
 	iprintf("\n--------------------------------");
 
 	if (sdMounted == false && !fatInitDefault()) {
-		iprintf("\nSD card not mounted!");
+		iprintf("\nSD card not mounted!\n");
 		success = false;
 	} else {
-		iprintf("\nSD card mounted okay.");
+		iprintf("\nSD card mounted okay.\n");
 		sdMounted = true;
 	}
 
 	if(!nitroFSInit("TwlNandTool.prod.srl") || !nitroFSGood()) {
 		if(!nitroFSInit("TwlNandTool.dev.srl") || !nitroFSGood()) {
 			if(!nitroFSInit("ntrboot.nds") || !nitroFSGood()) {
-				iprintf("\x1B[31mFailed to mount NitroFS!\n\x1B[30m\nSome features will not work.\n\nTry placing the SRL for your DSiat one of these locations:\n\nSDMC:/TwlNandTool.prod.srl\nSDMC:/TwlNandTool.dev.srl\nSDMC:/ntrboot.nds\n");
+				messageBox("\n\x1B[31mFailed to mount NitroFS!\n\x1B[30m\nSome features will not work.\n\nTry placing the SRL for your DSiat one of these locations:\n\nSDMC:/TwlNandTool.prod.srl\nSDMC:/TwlNandTool.dev.srl\nSDMC:/ntrboot.nds\n");
 				success = false;
 			}
 		}
