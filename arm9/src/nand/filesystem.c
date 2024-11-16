@@ -78,7 +78,6 @@ static int _fsMenu(int cursor)
     setMenuHeader(m, "TwlNandTool");
     setListHeader(m, "FileSystem");
 
-	char modeStr[32];
 	addMenuItem(m, "Read MBR", NULL, 0, "Test the Master Boot Record.");
 	addMenuItem(m, "Repair MBR", NULL, 0, "Repair the Master Boot Record.");
 	addMenuItem(m, "Format TWL_MAIN", NULL, 0, "Format the partition where the\n firmware, apps, and saves are\n installed.\n\n THIS WILL ERASE EVERYTHING.");
@@ -463,7 +462,7 @@ bool filetestMain(void) {
 
 	    memset(sector_buf, 0, SECTOR_SIZE);
 
-		iprintf("\nOpening file...");
+		iprintf("\nOpening test file...");
 	    FILE *file2 = fopen(file_path, "rb");
 	    if(file2) {
 		    iprintf("\nRead test...");
@@ -480,6 +479,8 @@ bool filetestMain(void) {
 	    	success = false;
 			iprintf("\nFile failed to open!");
 	    }
+
+	    remove(file_path);
 	} else {
 		success = false;
 		iprintf("\nTWL_MAIN is not mounted!");

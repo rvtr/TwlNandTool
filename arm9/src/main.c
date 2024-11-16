@@ -69,7 +69,6 @@ static int _mainMenu(int cursor)
     setMenuHeader(m, "TwlNandTool");
     setListHeader(m, "START MENU");
 
-    char modeStr[32];
     addMenuItem(m, "FileSystem Menu", NULL, 0, "Options such as repairing MBR\n and formatting twl_main/photo.");
     addMenuItem(m, "NandFirm menu", NULL, 0, "NandFirm (stage2) installers\n and version testing.");
     addMenuItem(m, "---------------", NULL, 0, "");
@@ -236,7 +235,7 @@ int main(int argc, char **argv)
 }
 
 int debug1(void) {
-
+	success = true;
 	clearScreen(cSUB);
 
 	iprintf("\n>> Debug1");
@@ -248,9 +247,11 @@ int debug1(void) {
     }
 
 	exitFunction();
+	return success;
 }
 
 int debug2(void) {
+	success = true;
 	clearScreen(cSUB);
 
 	iprintf("\n>> Corrupt MBR                  ");
@@ -263,11 +264,13 @@ int debug2(void) {
 	dsi_nand_crypt(sector_buf, sector_buf, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
     if(!parse_mbr(sector_buf, is3DS)) {
     	iprintf("\n\n    \x1B[31mERROR!\x1B[30m Failed to break MBR.");
+    	success = false;
     } else {
     	iprintf("\n\x1B[32mMBR corrupted okay!\x1B[30m");
     }
 
 	exitFunction();
+	return success;
 }
 
 int debug3(void) {

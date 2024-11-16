@@ -22,6 +22,7 @@ void nandio_set_fat_sig_fix(uint32_t offset);
 void getCID(u8 *CID);
 void getConsoleID(uint8_t *consoleID);
 void nandGetInfo(void);
+void cpuGetInfo(void);
 
 typedef struct {
     uint8_t NAND_MID;
@@ -35,11 +36,20 @@ typedef struct {
     uint8_t NAND_MDT_YEAR;
 } nandData;
 
+typedef struct {
+    uint8_t CPU_START_YEAR[2];
+    uint8_t CPU_START_MONTH[1];
+    uint8_t CPU_END_YEAR[2];
+    uint8_t CPU_END_MONTH[2];
+} cpuData;
+
+
 extern u8 *sector_buf;
 extern u8 *file_buf;
 extern bool is3DS;
 
 extern nandData nandInfo;
+extern cpuData cpuInfo;
 
 extern u8 consoleID[8];
 extern u8 CID[16];

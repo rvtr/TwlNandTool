@@ -119,15 +119,15 @@ int main()
 
 	if (isDSiMode() /*|| ((REG_SCFG_EXT & BIT(17)) && (REG_SCFG_EXT & BIT(18)))*/)
 	{
-		vu8 *out=(vu8*)0x02300000;
+		u8 *out=(u8*)0x02300000;
 		memset(out, 0, 16);
 
 //#if USENATIVECONSOLEID
 		// first check whether we can read the console ID directly and it was not hidden by SCFG
-		if (((*(vu16*)0x04004000) & (1u << 10)) == 0 && ((*(vu8*)0x04004D08) & 0x1) == 0)
+		if (((*(vu16*)0x04004000) & (1u << 10)) == 0 && ((*(u8*)0x04004D08) & 0x1) == 0)
 		{
 			// The console id registers are readable, so use them!
-		memcpy(out, (vu8*)0x04004D00, 8);
+		memcpy(out, (u8*)0x04004D00, 8);
 		}
 		if(out[0] == 0 || out[1] == 0) {
 			// For getting ConsoleID without reading from 0x4004D00...
@@ -187,7 +187,7 @@ int main()
 			batteryStatus = (readPowerManagement(PM_BATTERY_REG) & 1) ? 0x3 : 0xF;
 		fifoSendValue32(FIFO_USER_03, batteryStatus);
 
-		fifoSendValue32(FIFO_USER_01, *(vu8*)0x04004024);
+		fifoSendValue32(FIFO_USER_01, *(u8*)0x04004024);
 
 		swiWaitForVBlank();
 	}

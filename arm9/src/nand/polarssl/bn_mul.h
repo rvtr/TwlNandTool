@@ -576,7 +576,7 @@
 
 #if defined(__thumb__) && !defined(__thumb2__)
 
-#pragma message "using ARM THUMB MULADDC"
+// #pragma message "using ARM THUMB MULADDC"
 
 #define MULADDC_INIT                                    \
     asm(                                                \

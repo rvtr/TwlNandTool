@@ -26,6 +26,7 @@ u8 CID[16];
 u8 consoleIDfixed[8];
 
 nandData nandInfo = {0};
+cpuData cpuInfo = {0};
 
 const DISC_INTERFACE io_dsi_nand = {
 	NAND_DEVICENAME,
@@ -50,11 +51,11 @@ static u8* crypt_buf = 0;
 static u32 fat_sig_fix_offset = 0;
 
 static u32 sector_buf32[SECTOR_SIZE/sizeof(u32)];
-extern u8 *sector_buf = (u8*)sector_buf32;
+u8 *sector_buf = (u8*)sector_buf32;
 static u32 sector_buf232[SECTOR_SIZE/sizeof(u32)];
-extern u8 *sector_buf2 = (u8*)sector_buf232;
+u8 *sector_buf2 = (u8*)sector_buf232;
 static u32 file_buf32[BUFFER_SIZE/sizeof(u32)];
-extern u8 *file_buf = (u8*)file_buf32;
+u8 *file_buf = (u8*)file_buf32;
 
 void nandio_set_fat_sig_fix(u32 offset)
 {
@@ -117,6 +118,43 @@ void nandGetInfo(void) {
     return;
 }
 
+void cpuGetInfo(void) {
+  /*
+
+typedef struct {
+    uint8_t CPU_START_YEAR[2];
+    uint8_t CPU_START_MONTH[1];
+    uint8_t CPU_END_YEAR[2];
+    uint8_t CPU_END_MONTH[2];
+} cpuData;
+
+
+
+  	08a* ConsoleIDs (2008/10 to 2009/09):
+
+  08a16 is introduced around 2008/10 and phased out around 2009/01
+  08a17 is introduced around 2008/11 and phased out around 2009/01
+  08a18 is introduced around 2008/11 and phased out around 2009/01
+  08a19 is introduced around 2009/01 and phased out around 2009/02
+  08a20 is introduced around 2009/02 and phased out around 2009/05
+  08a21 is introduced around 2009/02 and phased out around 2009/05
+  08a22 is introduced around 2009/07 then turned dev only around 2009/07
+        It is phased out later that month, but is re-introduced around 2010/06 and phased out around 2010/07
+        Looks like old stock used for factory DSis?
+  08a23 is introduced around 2009/07 and phased out around 2009/08
+  08a24 is introduced around 2009/09 and phased out around 2009/09
+
+  	082* ConsoleIDs (2009/08 to 2013/05):
+
+  08201 is introduced around 2009/08 and is phased out around 2010/06
+  08202 is introduced around 2010/06 and is phased out around 2012/01
+  08203 is introduced around 2010/11 and is phased out around 2011/03
+  08205 is introduced around 2010/12 and is phased out around 2013/05
+  08204 is introduced around 2011/06 and is phased out around 2011/07
+
+  */
+}
+
 bool nandio_startup()
 {
 
@@ -132,6 +170,7 @@ bool nandio_startup()
 		consoleIDfixed[i] = consoleID[7-i];
 	}
 	nandGetInfo();
+	cpuGetInfo();
 
 	// iprintf("sector 0 is %s\n", is3DS ? "3DS" : "DSi");
 	dsi_crypt_init((const u8*)consoleIDfixed, (const u8*)0x2FFD7BC, is3DS);
@@ -183,7 +222,12 @@ static bool read_sectors(sec_t start, sec_t len, void *buffer)
 // len is guaranteed <= CRYPT_BUF_LEN
 static bool write_sectors(sec_t start, sec_t len, const void *buffer)
 {
+
 	static u8 writeCopy[SECTOR_SIZE*16];
+    if (len * SECTOR_SIZE > sizeof(writeCopy)) {
+        return false;
+    }
+
 	memcpy(writeCopy, buffer, len * SECTOR_SIZE);
 
 	dsi_nand_crypt(crypt_buf, writeCopy, start * SECTOR_SIZE / AES_BLOCK_SIZE, len * SECTOR_SIZE / AES_BLOCK_SIZE);

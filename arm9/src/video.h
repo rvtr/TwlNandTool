@@ -4,7 +4,7 @@
 extern enum console {
 	cMAIN=	1<<0,
 	cSUB=	1<<1
-};
+}consolescreens;
 
 void	videoInit	();
 void	consoleHide	(enum console c);

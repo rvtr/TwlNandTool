@@ -21,3 +21,4 @@ int nfMain(void);
 bool nandFirmRead(void);
 bool nandFirmImport(bool sdmc);
 bool nandPrintInfo(void);
+bool cpuPrintInfo(void);
