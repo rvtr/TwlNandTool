@@ -12,6 +12,9 @@ Why do these matter? You can create a new working NAND from scratch! No backups 
 
 ![FileSystem menu](.github/filesystem.png)![NAND CID info](.github/cidinfo.png)
 
+## Contributing
+I'm basing a lot of this off of my private DSi [NAND archive](https://nands.randommeaninglesscharacters.com/directory.html) and a lot of DSi [factory tools](https://randommeaninglesscharacters.com/dsidev/twl_eva.html). If you have any of the above, *especially a __bricked__ DSi*, please [contact me](https://randommeaninglesscharacters.com/contact.html). Having these as a reference is extremely helpful for covering more edge cases.
+
 ## Notes
 - I am including my own hostile and outdated fork of libfat. This is to block `nand_Startup()` during `fatMount()`. Without this having a NAND re-mount would run `nand_Startup()` more than once and break every NAND R/W function until reboot...
 - I do not use the release NandFirm/stage2/bootloader (v2435-8325). Instead I use newer NandFirms as listed below. These NandFirms are able to run unlaunch, however they will stop the installer from working ("unknown bootcode version"). Unlaunch installs carry a brick risk by sometimes erasing the Launcher TMD, so this will somewhat forcefully encourage users to move to a [safer installer](https://github.com/edo9300/unlaunch-installer). Normally I'm against intentionally breaking things but this will prevent future bricks.
@@ -23,4 +26,4 @@ Why do these matter? You can create a new working NAND from scratch! No backups 
 	- `0x794000`: Happened when I deleted HWInfo and let SystemUpdater create it
 
 ## Including system files
-*B-b-but you have system files like the bootloader!* Sorry, these files are required to boot a DSi and almost always cannot be custom made due to signing. This is a tool meant to fix every possible software brick, and to do so in an accessible way. Most people are not going to know how to recover a bootloader, find the right FontTable for their region, or get the correct and safe wlanfirm/sysmenuVersion. Even given a well written guide, I know the "what's a hex editor" or "what's a byte" messages all too well. It is not safe to force people to chase after things they may not understand. Especially when one wrong file will cause a brick, and the owner will be none the wiser.
+*B-b-but you have system files like the bootloader!* These files are required to boot a DSi and almost always cannot be custom made due to signing. This is a tool meant to fix every possible software brick, and to do so in an accessible way. Most people are not going to know how to recover a bootloader, find the right FontTable for their region, or get the correct and safe wlanfirm/sysmenuVersion. Even given a well written guide, I know the "what's a hex editor" or "what's a byte" messages all too well. It is not safe to force people to chase after things they may not understand. Especially when one wrong file will cause a brick, and the owner will be none the wiser.
