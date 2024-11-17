@@ -19,11 +19,11 @@ I will add a friendly built in "tutorial" at some point, but until then please d
     - [Import NandFirm](#--import-nandfirm)
     - [Import NandFirm (SDMC)](#--import-nandfirm-(sdmc))
   - [Sys File Menu](#sys-file-menu)
-    - [Find HWINFO\_S.dat](#--find-hwinfo\_s.dat)
-    - [Find HWINFO\_S.dat (deep)](#--find-hwinfo\_s.dat-(deep))
-    - [Init HWINFO\_N.dat](#--init-hwinfo\_n.dat)
-    - [Init HWINFO\_S.dat](#--init-hwinfo\_s.dat)
-    - [Init cert.sys](#--init-cert.sys)
+    - [Find HWINFO\_S.dat](#--find-hwinfo_sdat)
+    - [Find HWINFO\_S.dat (deep)](#--find-hwinfo_sdat-(deep))
+    - [Init HWINFO\_N.dat](#--init-hwinfo_ndat)
+    - [Init HWINFO\_S.dat](#--init-hwinfo_sdat)
+    - [Init cert.sys](#--init-certsys)
     - [Init TWLFontTable](#--init-twlfonttable)
   - [Chip Info Menu](#chip-info-menu)
     - [CID Info](#--cid-info)
@@ -68,11 +68,11 @@ Search the entire TWL\_MAIN (no mount) byte by byte until HWINFO\_S.dat is found
 ### - Init HWINFO\_N.dat
 Create a new HWINFO\_N.dat.
 ### - Init HWINFO\_S.dat
-Create a new HWINFO\_S.dat in TWL\_MAIN by running the [Find HWINFO\_S.dat](#--find-hwinfo\_s.dat) function.
+Create a new HWINFO\_S.dat in TWL\_MAIN by running the [Find HWINFO\_S.dat](#--find-hwinfo_sdat) function.
 ### - Init cert.sys
 Create a new certificate chain.
 ### - Init TWLFontTable
-Install the font files required by the firmware. This is region specific, so it will depend on [Init HWINFO\_S.dat](#--init-hwinfo\_s.dat) having recovered and saved a HWINFO\_S.dat (or it will use HWINFO_S.dat if already there). If no HWINFO\_S.dat exists, the region will default to USA and the respective TWLFontData will be installed.
+Install the font files required by the firmware. This is region specific, so it will depend on [Init HWINFO\_S.dat](#--init-hwinfo_sdat) having recovered and saved a HWINFO\_S.dat (or it will use HWINFO_S.dat if already there). If no HWINFO\_S.dat exists, the region will default to USA and the respective TWLFontData will be installed.
 
 ## Chip Info Menu
 These functions show info on the DSi's chips.
