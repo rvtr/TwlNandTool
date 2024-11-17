@@ -8,6 +8,8 @@
 #include <time.h>
 #include "nand/filesystem.h"
 #include "nand/nandfirm.h"
+#include "nand/chipinfo.h"
+#include "nand/sysfile.h"
 #include "video.h"
 #include "nitrofs.h"
 #include "font.h"
@@ -22,8 +24,9 @@
 	- Detect debugger vs dev
 	- Recover HWInfo
 	- Back up/restore screen memory
-	- System transfer (way later on)
+	- NandFirm hash checking <-- very very very important!
 
+	- System transfer (way later on)
 	- Why doesn't unmounting NAND get reflected in the file test?
 
 */
@@ -52,6 +55,8 @@ PrintConsole bottomScreen;
 typedef enum {
   STARTMENU_FS_MENU,
   STARTMENU_NF_MENU,
+  STARTMENU_SYSFILE_MENU,
+  STARTMENU_CHIP_MENU,
   STARTMENU_NULL,
   STARTMENU_TEST,
   STARTMENU_TEST2,
@@ -69,8 +74,10 @@ static int _mainMenu(int cursor)
     setMenuHeader(m, "TwlNandTool");
     setListHeader(m, "START MENU");
 
-    addMenuItem(m, "FileSystem Menu", NULL, 0, "Options such as repairing MBR\n and formatting twl_main/photo.");
-    addMenuItem(m, "NandFirm menu", NULL, 0, "NandFirm (stage2) installers\n and version testing.");
+    addMenuItem(m, "FileSystem Menu", NULL, 0, "Options such as repairing MBR\n and formatting TWL_MAIN/PHOTO.");
+    addMenuItem(m, "NandFirm Menu", NULL, 0, "NandFirm (stage2) installers\n and verification.");
+    addMenuItem(m, "Sys File Menu", NULL, 0, "Create/recover system files\n like HWInfo, FontTable, and\n cert.sys");
+    addMenuItem(m, "Chip Info Menu", NULL, 0, "Info on the NAND and CPU.");
     addMenuItem(m, "---------------", NULL, 0, "");
     addMenuItem(m, "Debug1", NULL, 0, "Font display.");
     addMenuItem(m, "Debug2", NULL, 0, "MBR corruption test.");
@@ -192,6 +199,14 @@ int main(int argc, char **argv)
 
             case STARTMENU_NF_MENU:
                 nfMain();
+                break;
+
+            case STARTMENU_SYSFILE_MENU:
+                sysfileMain();
+                break;
+
+            case STARTMENU_CHIP_MENU:
+                chipMain();
                 break;
 
             case STARTMENU_NULL:

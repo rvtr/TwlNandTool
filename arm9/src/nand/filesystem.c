@@ -67,8 +67,7 @@ enum {
 	FSMENU_MOUNT_NITRO,
 	FSMENU_NULL2,
 	FSMENU_FILETEST_MAIN,
-	FSMENU_FILETEST_NITRO,
-	FSMENU_BACK
+	FSMENU_FILETEST_NITRO
 };
 
 static int _fsMenu(int cursor)
@@ -89,7 +88,6 @@ static int _fsMenu(int cursor)
 	addMenuItem(m, "------------------", NULL, 0, "");
 	addMenuItem(m, "File test TWL_MAIN", NULL, 0, "Attempt to make/delete dummy\n file on NAND.");
 	addMenuItem(m, "File test NitroFS", NULL, 0, "Attempt to read file in\n NitroFS.");
-	addMenuItem(m, "Back", NULL, 0, "Leave the FileSystem menu.");
 
 	m->cursor = cursor;
 
@@ -106,6 +104,9 @@ static int _fsMenu(int cursor)
 
 		if (keysDown() & KEY_A)
 			break;
+
+		if (keysDown() & KEY_B)
+			programEnd = true;
 	}
 
 	int result = m->cursor;
@@ -123,54 +124,52 @@ int fsMain(void)
 	{
 		cursor = _fsMenu(cursor);
 
-		switch (cursor)
-		{
+		if (programEnd == false) {
+			switch (cursor)
+			{
 
-			case FSMENU_READ_MBR:
-				readMbr();
-				break;
+				case FSMENU_READ_MBR:
+					readMbr();
+					break;
 
-			case FSMENU_REPAIR_MBR:
-				repairMbr(false);
-				break;
+				case FSMENU_REPAIR_MBR:
+					repairMbr(false);
+					break;
 
-			case FSMENU_FORMAT_MAIN:
-				formatMain();
-				break;
+				case FSMENU_FORMAT_MAIN:
+					formatMain();
+					break;
 
-			case FSMENU_FORMAT_PHOTO:
-				formatPhoto();
-				break;
+				case FSMENU_FORMAT_PHOTO:
+					formatPhoto();
+					break;
 
-			case FSMENU_NULL:
-				break;
+				case FSMENU_NULL:
+					break;
 
-			case FSMENU_MOUNT_MAIN:
-				mountMain();
-				break;
+				case FSMENU_MOUNT_MAIN:
+					mountMain();
+					break;
 
-			case FSMENU_UNMOUNT_MAIN:
-				unmountMain();
-				break;
+				case FSMENU_UNMOUNT_MAIN:
+					unmountMain();
+					break;
 
-			case FSMENU_MOUNT_NITRO:
-				mountNitroFS();
-				break;
+				case FSMENU_MOUNT_NITRO:
+					mountNitroFS();
+					break;
 
-			case FSMENU_NULL2:
-				break;
+				case FSMENU_NULL2:
+					break;
 
-			case FSMENU_FILETEST_MAIN:
-				filetestMain();
-				break;
+				case FSMENU_FILETEST_MAIN:
+					filetestMain();
+					break;
 
-			case FSMENU_FILETEST_NITRO:
-				filetestNitro();
-				break;
-
-			case FSMENU_BACK:
-				programEnd = true;
-				break;
+				case FSMENU_FILETEST_NITRO:
+					filetestNitro();
+					break;
+			}
 		}
 	}
 

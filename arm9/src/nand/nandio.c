@@ -119,17 +119,105 @@ void nandGetInfo(void) {
 }
 
 void cpuGetInfo(void) {
+	switch (consoleID[6]) {
+	  case 0xA1:
+		switch ((consoleID[5] & 0xF0) >> 4) {
+		  case 6:
+		  	cpuInfo.CPU_START_MONTH = 10;
+		  	cpuInfo.CPU_START_YEAR = 8;
+		  	cpuInfo.CPU_END_MONTH = 1;
+		  	cpuInfo.CPU_END_YEAR = 9;
+		    break;
+		  case 7:
+		  	cpuInfo.CPU_START_MONTH = 11;
+		  	cpuInfo.CPU_START_YEAR = 8;
+		  	cpuInfo.CPU_END_MONTH = 1;
+		  	cpuInfo.CPU_END_YEAR = 9;
+		    break;
+		  case 8:
+		  	cpuInfo.CPU_START_MONTH = 11;
+		  	cpuInfo.CPU_START_YEAR = 8;
+		  	cpuInfo.CPU_END_MONTH = 1;
+		  	cpuInfo.CPU_END_YEAR = 9;
+		    break;
+		  case 9:
+		  	cpuInfo.CPU_START_MONTH = 1;
+		  	cpuInfo.CPU_START_YEAR = 9;
+		  	cpuInfo.CPU_END_MONTH = 2;
+		  	cpuInfo.CPU_END_YEAR = 9;
+		    break;
+		}
+	    break;
+	  case 0xA2:
+		switch ((consoleID[5] & 0xF0) >> 4) {
+		  case 0:
+		  	cpuInfo.CPU_START_MONTH = 2;
+		  	cpuInfo.CPU_START_YEAR = 9;
+		  	cpuInfo.CPU_END_MONTH = 5;
+		  	cpuInfo.CPU_END_YEAR = 9;
+		    break;
+		  case 1:
+		  	cpuInfo.CPU_START_MONTH = 2;
+		  	cpuInfo.CPU_START_YEAR = 9;
+		  	cpuInfo.CPU_END_MONTH = 5;
+		  	cpuInfo.CPU_END_YEAR = 9;
+		    break;
+		  case 2:
+		  	cpuInfo.CPU_START_MONTH = 7;
+		  	cpuInfo.CPU_START_YEAR = 9;
+		  	cpuInfo.CPU_END_MONTH = 7;
+		  	cpuInfo.CPU_END_YEAR = 9;
+		    break;
+		  case 3:
+		  	cpuInfo.CPU_START_MONTH = 7;
+		  	cpuInfo.CPU_START_YEAR = 9;
+		  	cpuInfo.CPU_END_MONTH = 8;
+		  	cpuInfo.CPU_END_YEAR = 9;
+		    break;
+		  case 4:
+		  	cpuInfo.CPU_START_MONTH = 9;
+		  	cpuInfo.CPU_START_YEAR = 9;
+		  	cpuInfo.CPU_END_MONTH = 9;
+		  	cpuInfo.CPU_END_YEAR = 9;
+		    break;
+		}
+	    break;
+	  case 0x20:
+		switch ((consoleID[5] & 0xF0) >> 4) {
+		  case 1:
+		  	cpuInfo.CPU_START_MONTH = 8;
+		  	cpuInfo.CPU_START_YEAR = 9;
+		  	cpuInfo.CPU_END_MONTH = 6;
+		  	cpuInfo.CPU_END_YEAR = 10;
+		    break;
+		  case 2:
+		  	cpuInfo.CPU_START_MONTH = 6;
+		  	cpuInfo.CPU_START_YEAR = 10;
+		  	cpuInfo.CPU_END_MONTH = 1;
+		  	cpuInfo.CPU_END_YEAR = 12;
+		    break;
+		  case 3:
+		  	cpuInfo.CPU_START_MONTH = 11;
+		  	cpuInfo.CPU_START_YEAR = 10;
+		  	cpuInfo.CPU_END_MONTH = 3;
+		  	cpuInfo.CPU_END_YEAR = 11;
+		    break;
+		  case 4:
+		  	cpuInfo.CPU_START_MONTH = 6;
+		  	cpuInfo.CPU_START_YEAR = 11;
+		  	cpuInfo.CPU_END_MONTH = 7;
+		  	cpuInfo.CPU_END_YEAR = 11;
+		    break;
+		  case 5:
+		  	cpuInfo.CPU_START_MONTH = 12;
+		  	cpuInfo.CPU_START_YEAR = 10;
+		  	cpuInfo.CPU_END_MONTH = 5;
+		  	cpuInfo.CPU_END_YEAR = 13;
+		    break;
+		}
+	    break;
+	}
   /*
-
-typedef struct {
-    uint8_t CPU_START_YEAR[2];
-    uint8_t CPU_START_MONTH[1];
-    uint8_t CPU_END_YEAR[2];
-    uint8_t CPU_END_MONTH[2];
-} cpuData;
-
-
-
   	08a* ConsoleIDs (2008/10 to 2009/09):
 
   08a16 is introduced around 2008/10 and phased out around 2009/01
@@ -149,9 +237,8 @@ typedef struct {
   08201 is introduced around 2009/08 and is phased out around 2010/06
   08202 is introduced around 2010/06 and is phased out around 2012/01
   08203 is introduced around 2010/11 and is phased out around 2011/03
-  08205 is introduced around 2010/12 and is phased out around 2013/05
   08204 is introduced around 2011/06 and is phased out around 2011/07
-
+  08205 is introduced around 2010/12 and is phased out around 2013/05
   */
 }
 

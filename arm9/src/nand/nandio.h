@@ -37,10 +37,10 @@ typedef struct {
 } nandData;
 
 typedef struct {
-    uint8_t CPU_START_YEAR[2];
-    uint8_t CPU_START_MONTH[1];
-    uint8_t CPU_END_YEAR[2];
-    uint8_t CPU_END_MONTH[2];
+    uint8_t CPU_START_YEAR;
+    uint8_t CPU_START_MONTH;
+    uint8_t CPU_END_YEAR;
+    uint8_t CPU_END_MONTH;
 } cpuData;
 
 

@@ -8,27 +8,19 @@
 #include "twltool/dsi.h"
 #include "nandio.h"
 #include "nandfirm.h"
+#include "chipinfo.h"
 #include "sector0.h"
 #include "crypto.h"
 #include "../message.h"
 #include "../main.h"
 #include "../video.h"
 
-void death(char *message, u8 *buffer){
-	iprintf("\n%s\n", message);
-	free(buffer);
-	while(1)swiWaitForVBlank();
-}
-
 static size_t i;
 
 enum {
 	NFMENU_CHECK_VER,
 	NFMENU_IMPORT,
-	NFMENU_IMPORT_SDMC,
-	NFMENU_READ_CID,
-	NFMENU_READ_CONSOLEID,
-	NFMENU_BACK
+	NFMENU_IMPORT_SDMC
 };
 
 static int _nfMenu(int cursor)
@@ -41,9 +33,6 @@ static int _nfMenu(int cursor)
 	addMenuItem(m, "Check NandFirm", NULL, 0, "Check the stage2 (bootloader)\n version and type.");
 	addMenuItem(m, "Import NandFirm", NULL, 0, "Install the standard stage2\n (bootloader).\n\n This stage2 works normally,\n but it is an updated version:\n - v2265-9336 (prod)\n - v2725-9336 (dev)");
 	addMenuItem(m, "Import NandFirm (SDMC)", NULL, 0, "Install the SDMC Launcher\n stage2 (bootloader).\n\n SDMC will remove access to\n the firmware and SHOULD NOT\n BE USED unless otherwise\n told to do so.");
-	addMenuItem(m, "CID Info", NULL, 0, "Get NAND chip information.");
-	addMenuItem(m, "ConsoleID Info", NULL, 0, "Get CPU information.");
-	addMenuItem(m, "Back", NULL, 0, "Leave the NandFirm menu.");
 
 	m->cursor = cursor;
 
@@ -60,6 +49,9 @@ static int _nfMenu(int cursor)
 
 		if (keysDown() & KEY_A)
 			break;
+
+		if (keysDown() & KEY_B)
+			programEnd = true;
 	}
 
 	int result = m->cursor;
@@ -77,32 +69,22 @@ int nfMain(void)
 	{
 		cursor = _nfMenu(cursor);
 
-		switch (cursor)
-		{
+		if (programEnd == false) {
+			switch (cursor)
+			{
 
-			case NFMENU_CHECK_VER:
-				nandFirmRead();
-				break;
+				case NFMENU_CHECK_VER:
+					nandFirmRead();
+					break;
 
-			case NFMENU_IMPORT:
-				nandFirmImport(false);
-				break;
+				case NFMENU_IMPORT:
+					nandFirmImport(false);
+					break;
 
-			case NFMENU_IMPORT_SDMC:
-				nandFirmImport(true);
-				break;
-
-			case NFMENU_READ_CID:
-				nandPrintInfo();
-				break;
-
-			case NFMENU_READ_CONSOLEID:
-				cpuPrintInfo();
-				break;
-
-			case NFMENU_BACK:
-				programEnd = true;
-				break;
+				case NFMENU_IMPORT_SDMC:
+					nandFirmImport(true);
+					break;
+			}
 		}
 	}
 
@@ -168,59 +150,4 @@ bool nandFirmImport(bool sdmc) {
 
     exitFunction();
     return success;
-}
-
-bool nandPrintInfo(void) {
-	success = true;
-	extern nandData nandInfo;
-	clearScreen(cSUB);
-	iprintf("\n>> CID (Card IDentification)");
-	iprintf("\n Brand : %s", nandInfo.NAND_MID_NAME);
-	iprintf("\n--------------------------------");
-	iprintf("\nManufacturer ID    : 0x%02X", nandInfo.NAND_MID);
-	iprintf("\nOEM/Application ID : 0x%02X%02X", nandInfo.NAND_OID[0], nandInfo.NAND_OID[1]);
-	iprintf("\nProduct name       : %s", nandInfo.NAND_PNM);
-	iprintf("\nProduct revision   : %02X", nandInfo.NAND_PRV);
-	iprintf("\nProduct S/N        : %02X%02X%02X%02X", nandInfo.NAND_PSN[0], nandInfo.NAND_PSN[1], nandInfo.NAND_PSN[2], nandInfo.NAND_PSN[3]);
-	if (nandInfo.NAND_MDT_YEAR <= 9) {
-		iprintf("\nManufacturing date : %02X(%d 200%d)",nandInfo.NAND_MDT, nandInfo.NAND_MDT_MONTH, nandInfo.NAND_MDT_YEAR);
-	} else {
-		iprintf("\nManufacturing date : %02X(%d 20%d)",nandInfo.NAND_MDT, nandInfo.NAND_MDT_MONTH, nandInfo.NAND_MDT_YEAR);
-	}
-    printf("\n\n     ");
-    for (i = 16; i > 0;) {
-    	i--;
-        if ((i + 1) % 2 == 0) {
-            printf(" ");
-        }
-        printf("%02X", CID[i]);
-        if (i == 8) {
-            printf("\n     ");
-        }
-    }
-
-	exitFunction();
-	return success;
-}
-
-bool cpuPrintInfo(void) {
-	success = true;
-	extern nandData nandInfo;
-	clearScreen(cSUB);
-	iprintf("\n>> ConsoleID (CPU ID)           ");
-	iprintf("\n--------------------------------");
-    iprintf("\n\n     ");
-    for (i = 8; i > 0;) {
-    	i--;
-        if ((i + 1) % 2 == 0) {
-            printf(" ");
-        }
-        printf("%02X", consoleID[i]);
-        if (i == 8) {
-            printf("\n     ");
-        }
-    }
-
-	exitFunction();
-	return success;
 }

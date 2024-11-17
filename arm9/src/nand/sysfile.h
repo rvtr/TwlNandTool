@@ -15,7 +15,7 @@
 
 void wait(int ticks);
 
-int nfMain(void);
+int sysfileMain(void);
 
-bool nandFirmRead(void);
-bool nandFirmImport(bool sdmc);
+bool recoverHWInfoShallow(void);
+bool recoverHWInfoDeep(void);

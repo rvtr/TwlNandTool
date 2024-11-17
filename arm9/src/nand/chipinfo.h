@@ -15,7 +15,7 @@
 
 void wait(int ticks);
 
-int nfMain(void);
+int chipMain(void);
 
-bool nandFirmRead(void);
-bool nandFirmImport(bool sdmc);
+bool nandPrintInfo(void);
+bool cpuPrintInfo(void);

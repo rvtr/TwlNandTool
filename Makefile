@@ -66,4 +66,4 @@ arm9/$(TARGET).elf:
 clean:
 	$(MAKE) -C arm9 clean
 	$(MAKE) -C arm7 clean
-	rm -f $(TARGET).prod.srl $(TARGET).dev.srl $(TARGET).dev.tad $(TARGET).arm7 $(TARGET).arm9
+	rm -f $(TARGET).prod.srl $(TARGET).dev.srl $(TARGET).dev.tad ntrboot.nds $(TARGET).arm7 $(TARGET).arm9
