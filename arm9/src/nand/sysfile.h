@@ -15,7 +15,10 @@
 
 void wait(int ticks);
 
-int sysfileMain(void);
+int sysfileMain();
 
-bool recoverHWInfoShallow(void);
-bool recoverHWInfoDeep(void);
+bool recoverHWInfo();
+bool recoverHWInfoDeep();
+bool makeSystemFolders();
+bool makeCertChain();
+bool makeFontTable();

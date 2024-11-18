@@ -14,6 +14,7 @@
 #include "../message.h"
 #include "../main.h"
 #include "../video.h"
+#include "../storage.h"
 
 static size_t i;
 
@@ -21,6 +22,7 @@ enum {
 	SYSFILEMENU_RECOVER,
 	SYSFILEMENU_RECOVER2,
 	SYSFILEMENU_NULL,
+	SYSFILEMENU_INIT_FOLDER,
 	SYSFILEMENU_INIT_N,
 	SYSFILEMENU_INIT_S,
 	SYSFILEMENU_INIT_CERT,
@@ -101,11 +103,12 @@ static int _sysfileMenu(int cursor)
 
 	addMenuItem(m, "Find HWINFO_S.dat", NULL, 0, "Search for HWInfo in TWL_MAIN\n then in common offsets.\n\n In most cases this will be\n enough to recover HWInfo.");
 	addMenuItem(m, "Find HWINFO_S.dat (deep)", NULL, 0, "Do a byte by byte search for\n HWInfo in the NAND.\n\n This is rarely required and\n should be thought of as a last\n resort only.");
-	addMenuItem(m, "------------------------", NULL, 0, "Leave the NandFirm menu.");
-	addMenuItem(m, "Init HWINFO_N.dat", NULL, 0, "Create HWINFO_N.dat.\n\n This file is required to boot.");
-	addMenuItem(m, "Init HWINFO_S.dat", NULL, 0, "Recover and make HWINFO_S.dat.\n\n If HWINFO_S.dat cannot be\n recovered, it cannot be\n recreated and unlaunch will be\n required to boot the launcher.");
-	addMenuItem(m, "Init cert.sys", NULL, 0, "Create the certificate chain.");
-	addMenuItem(m, "Init TWLFontTable", NULL, 0, "Create the font data.");
+	addMenuItem(m, "------------------------", NULL, 0, "");
+	addMenuItem(m, "Write NAND folders", NULL, 0, "Create folders that store\n system files.");
+	addMenuItem(m, "Write HWINFO_N.dat", NULL, 0, "Create HWINFO_N.dat.\n\n This file is required to boot.");
+	addMenuItem(m, "Write HWINFO_S.dat", NULL, 0, "Recover and make HWINFO_S.dat.\n\n If HWINFO_S.dat cannot be\n recovered, it cannot be\n recreated and unlaunch will be\n required to boot the launcher.");
+	addMenuItem(m, "Write cert.sys", NULL, 0, "Create the certificate chain.");
+	addMenuItem(m, "Write TWLFontTable", NULL, 0, "Create the font data.");
 
 	m->cursor = cursor;
 
@@ -155,6 +158,10 @@ int sysfileMain(void)
 				case SYSFILEMENU_NULL:
 					break;
 
+				case SYSFILEMENU_INIT_FOLDER:
+					makeSystemFolders();
+					break;
+
 				case SYSFILEMENU_INIT_S:
 					break;
 
@@ -162,9 +169,11 @@ int sysfileMain(void)
 					break;
 
 				case SYSFILEMENU_INIT_CERT:
+					makeCertChain();
 					break;
 
 				case SYSFILEMENU_INIT_FONT:
+					makeFontTable();
 					break;
 			}
 		}
@@ -174,3 +183,137 @@ int sysfileMain(void)
 
 	return 0;
 }
+
+bool makeSystemFolders(void) {
+	success = true;
+	clearScreen(cSUB);
+
+	iprintf("\n>> Make NAND folders            ");
+	iprintf("\n--------------------------------");
+
+	if (nandMounted == true) {
+	    printf("\nMaking /sys/...");
+		mkdir("nand:/sys", 0777);
+	    printf("\nMaking /sys/log/...");
+		mkdir("nand:/sys/log", 0777);
+	    printf("\nMaking /shared1/...");
+		mkdir("nand:/shared1", 0777);
+	    printf("\nMaking /shared2/...");
+		mkdir("nand:/shared2", 0777);
+	    printf("\nMaking /ticket/...");
+		mkdir("nand:/ticket", 0777);
+	    printf("\nMaking /title/...");
+		mkdir("nand:/title", 0777);
+	    printf("\nMaking /tmp/...");
+		mkdir("nand:/tmp", 0777);
+	    printf("\nDone!");
+	} else {
+		success = false;
+		iprintf("\nTWL_MAIN is not mounted!");
+	}
+
+	exitFunction();
+	return success;
+}
+
+bool makeCertChain(void) {
+	success = true;
+	clearScreen(cSUB);
+
+	iprintf("\n>> Make cert.sys                ");
+	iprintf("\n--------------------------------");
+
+	if (nandMounted == true) {
+
+	    printf("\nRemoving old cert.sys...");
+	    char nitro_path[100];
+	    snprintf(nitro_path, 100, "nitro:/import/%s/cert.sys", consoleSignName);
+	    remove("nand:/sys/cert.sys");
+	    printf("\nWriting cert.sys...");
+	    if (copyFile(nitro_path, "nand:/sys/cert.sys") != 0) {
+	    	success = false;
+	    } else {
+	    	printf("\nDone!");
+	    }
+	} else {
+		success = false;
+		iprintf("\nTWL_MAIN is not mounted!");
+	}
+
+	exitFunction();
+	return success;
+}
+
+bool makeFontTable(void) {
+	success = true;
+	clearScreen(cSUB);
+
+	iprintf("\n>> Make TWLFontTable            ");
+	iprintf("\n--------------------------------");
+
+	if (nandMounted == true) {
+
+		// I need to do region checking (world/korea/china)
+	    printf("\nRemoving old TWLFontTable...");
+	    char nitro_path[100];
+	    snprintf(nitro_path, 100, "nitro:/import/common/TWLFontTable.dat");
+	    remove("nand:/sys/TWLFontTable.dat");
+	    printf("\nWriting TWLFontTable (world)...");
+	    if (copyFile(nitro_path, "nand:/sys/TWLFontTable.dat") != 0) {
+	    	success = false;
+	    } else {
+	    	printf("\nDone!");
+	    }
+	} else {
+		success = false;
+		iprintf("\nTWL_MAIN is not mounted!");
+	}
+
+	exitFunction();
+	return success;
+}
+
+/*
+bool recoverHWInfo(void) {
+	success = true;
+	bool hwinfofound = false;
+	clearScreen(cSUB);
+
+	iprintf("\n>> Recover HWInfo Secure        ");
+	iprintf("\n--------------------------------");
+
+	if (nandMounted == true) {
+
+	    printf("\nChecking mounted TWL_MAIN...");
+	    if (fileExists("nand:/sys/HWINFO_S.dat")) {
+	    	printf("\nFound HWInfo.");
+		    if (copyFile("nand:/sys/HWINFO_S.dat", "sd:/HWINFO_S_BACKUP.dat") != 0) {
+		    	success = false;
+		    	printf("\nCouldn't copy HWInfo!");
+		    } else {
+		    	printf("\nCopied okay.");
+		    	// Some verification here
+		    	hwinfofound = true;
+		    }
+		} else {
+	    	printf("\nCouldn't find HWInfo!");
+		}
+	} else {
+		iprintf("\nChecking common offsets...");
+
+
+nandioread(offset + tidOffset, 16)
+if (first 3 bytes == ANH)
+    nandioread(offset + tidOffset + 0x3CB, 16)
+    if (nandioread == nandioread)
+        // Verify
+        fopen fwrite fclose
+
+
+
+	}
+
+	exitFunction();
+	return success;
+}
+*/

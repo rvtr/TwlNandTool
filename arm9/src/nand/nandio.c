@@ -491,6 +491,59 @@ bool good_nandio_write_file(int inputAddress, int inputLength, FILE *fp, bool cr
 	return true;
 }
 
+bool good_nandio_read(int inputAddress, int inputLength, u8 *buffer, bool crypt) {
+	nandWritten = true;
+	if (inputLength > BUFFER_SIZE) {
+		return false;
+	}
+	// Sorry lol I just don't want to deal with sector calculation
+	int byteOffset = inputAddress % SECTOR_SIZE;
+	int sectorNum = inputAddress / SECTOR_SIZE;
+	int byteEndOffset = (inputAddress+inputLength) % SECTOR_SIZE;
+	int sectorEndNum = (inputAddress+inputLength) / SECTOR_SIZE;
+	int i;
+	if (inputLength <= SECTOR_SIZE) {
+		// Handle a single sector write differently since it is unpredictable
+		nand_ReadSectors(sectorNum, 1, sector_buf);
+		if (crypt == true) {
+			dsi_nand_crypt(sector_buf, sector_buf, sectorNum * SECTOR_SIZE / AES_BLOCK_SIZE, SECTOR_SIZE / AES_BLOCK_SIZE);
+		}
+		memcpy(buffer, sector_buf + byteOffset, inputLength);
+	} else {
+		iprintf("\n ");
+		for (i = sectorNum; i < sectorEndNum + 1;) {
+			char currentPicto = downloadPlayLoading(i);
+			if (i % (sectorEndNum / 15) == 0) {
+				printf("\b%c", currentPicto);
+			}
+			// Back up sector
+		    nand_ReadSectors(i, 1, sector_buf);
+			if (crypt == true) {
+				// offset * SECTOR_SIZE / AES_BLOCK_SIZE
+				dsi_crypt_init((const u8*)consoleIDfixed, (const u8*)0x2FFD7BC, is3DS);
+				dsi_nand_crypt(sector_buf, sector_buf, i * SECTOR_SIZE / AES_BLOCK_SIZE, SECTOR_SIZE / AES_BLOCK_SIZE);
+				// Okay so the below one encrypted every other sector, failing the 1st, 3rd, 5th, etc.
+				//dsi_nand_crypt(sector_buf, sector_buf, inputAddress * SECTOR_SIZE / AES_BLOCK_SIZE, SECTOR_SIZE / AES_BLOCK_SIZE);
+			}
+			if (i == sectorNum) {
+				// Handle the first sector differently since we'll only be writing a partial amount of data
+				memcpy(buffer, sector_buf + byteOffset, SECTOR_SIZE - byteOffset);
+			} else if (i == sectorEndNum) {
+				// Handle the last sector differently since we'll only be writing a partial amount of data
+				memcpy(buffer + (((i  - sectorNum) * SECTOR_SIZE) - byteOffset), sector_buf, byteEndOffset);
+			} else {
+				// Handle the middle sectors the same because they'll always be the full sector
+				memcpy(buffer + (((i  - sectorNum) * SECTOR_SIZE) - byteOffset), sector_buf, SECTOR_SIZE);
+			}
+			i++;
+			// Do some check to make sure it is not outside of NAND range.
+		}
+		iprintf("\b\x1B[1A");
+	}
+	return true;
+}
+
+
 bool nandio_clear_status()
 {
 	return true;

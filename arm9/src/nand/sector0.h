@@ -19,7 +19,7 @@ extern "C" {
 /************************ Constants / Defines *********************************/
 
 #define SECTOR_SIZE              0x200
-#define BUFFER_SIZE              0x1000
+#define BUFFER_SIZE              0x5000
 
 #define MBR_PARTITIONS           4
 #define MBR_BOOTSTRAP_SIZE       (SECTOR_SIZE - (2 + MBR_PARTITIONS * 16))

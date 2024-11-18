@@ -39,6 +39,6 @@ void printMenu(Menu* m, int level);
 
 bool moveCursor(Menu* m);
 
-char downloadPlayLoading(int number);
+char downloadPlayLoading(int percent);
 void exitFunction();
 #endif

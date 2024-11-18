@@ -344,12 +344,15 @@ void wait(int ticks){
 	while(ticks--)swiWaitForVBlank();
 }
 
+int loadingCounter = 0;
 char downloadPlayLoading(int number) {
-	char pictoload[] = {(char)142, (char)143, (char)144, (char)145, (char)146, (char)147, (char)148, (char)149};
-    static int counter = 0;
-	
-	counter = (counter % 7) + 1;
-	return pictoload[counter];
+	char pictoload[] = {(char)143, (char)144, (char)145, (char)146, (char)147, (char)148, (char)149, (char)150};
+	if (loadingCounter >= 7) {
+		loadingCounter = 0;
+	} else {
+		loadingCounter++;
+	}
+	return pictoload[loadingCounter];
 }
 
 void exitFunction() {

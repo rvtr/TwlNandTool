@@ -21,14 +21,27 @@
 	TODO:
 	- LESS NAND WRITES!!!!!
 	- Write good NAND read routine
-	- Detect debugger vs dev
-	- Recover HWInfo
-	- Back up/restore screen memory
-	- NandFirm hash checking <-- very very very important!
-
-	- System transfer (way later on)
+	- Detect debugger vs dev (less important currently)
+	- Recover HWInfo byte by byte
+	- HWInfo verify
+	- HWInfo sign (can wait for a very long time)
 	- Why doesn't unmounting NAND get reflected in the file test?
+	- NandFirm hash checking <-- very very very important!
+	- Wipe TWLCFG, launcher saves, etc
+	- product.log reading and writing
+	- TAD stuff
+		- Title verification (exception for HNAG)
+		- PUB/PRV formatting and testing (cringe)
+		- Getting title lists
+		- Cut over 39 titles
+	- Unlaunch stuff
+		- Repair bricked TMD (depends on title verification)
+		- Install unlaunch through the safe method
 
+	COSMETIC OR OPTIONAL:
+	- Back up/restore screen memory
+	- System transfer (way later on)
+	
 */
 extern bool nand_Startup();
 extern bool sdio_Startup();
@@ -181,6 +194,15 @@ int main(int argc, char **argv)
 	mountNitroFS();
 	agingMode = false;
 
+	// 
+	swiWaitForVBlank();
+	scanKeys();
+
+	if (keysDown() & KEY_START || keysDown() & KEY_SELECT) {
+	} else {
+		debug1();
+	}
+
 	clearScreen(cSUB);
  	clearScreen(cMAIN);
 
@@ -296,6 +318,9 @@ int debug3(void) {
 	iprintf("\n>> NAND AGING tester            ");
 	iprintf("\n--------------------------------");
 
+    if (success == true && !cpuPrintInfo()) {
+        success = false;
+    }
     if (success == true && !nandPrintInfo()) {
         success = false;
     }
@@ -324,6 +349,15 @@ int debug3(void) {
 		nandMounted = true;
 	}
 	if (success == true && !filetestMain()) {
+        success = false;
+	}
+	if (success == true && !makeSystemFolders()) {
+        success = false;
+	}
+	if (success == true && !makeCertChain()) {
+        success = false;
+	}
+	if (success == true && !makeFontTable()) {
         success = false;
 	}
 	if (success == true && !unmountMain()) {

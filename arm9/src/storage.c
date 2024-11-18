@@ -117,7 +117,7 @@ int copyFilePart(char const* src, u32 offset, u32 size, char const* dst)
 		{
 			fseek(fin, offset, SEEK_SET);
 
-			consoleSet(cMAIN);
+			iprintf("\n ");
 
 			int bytesRead;
 			unsigned long long totalBytesRead = 0;
@@ -125,8 +125,11 @@ int copyFilePart(char const* src, u32 offset, u32 size, char const* dst)
 			#define BUFF_SIZE 128 //Arbitrary. A value too large freezes the ds.
 			char* buffer = (char*)malloc(BUFF_SIZE);
 
+			int i = 0;
+
 			while (!programEnd)
 			{
+
 				unsigned int toRead = BUFF_SIZE;
 				if (size - totalBytesRead < BUFF_SIZE)
 					toRead = size - totalBytesRead;
@@ -135,15 +138,20 @@ int copyFilePart(char const* src, u32 offset, u32 size, char const* dst)
 				fwrite(buffer, bytesRead, 1, fout);
 
 				totalBytesRead += bytesRead;
-				printProgressBar( ((float)totalBytesRead / (float)size) );
-
+				//printProgressBar( ((float)totalBytesRead / (float)size) );
+				if (i >= 50) {
+					char currentPicto = downloadPlayLoading(69);
+					printf("\b%c", currentPicto);
+					i = 0;
+				} else {
+					i++;
+				}
 				if (bytesRead != BUFF_SIZE)
 					break;
 			}
 
-			clearProgressBar();
-			consoleSet(cSUB);
-
+			iprintf("\b\x1B[1A");
+			//clearProgressBar();
 			free(buffer);
 		}
 

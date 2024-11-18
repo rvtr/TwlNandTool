@@ -20,7 +20,7 @@ I will add a friendly built in "tutorial" at some point, but until then please d
     - [Import NandFirm (SDMC)](#--import-nandfirm-(sdmc))
   - [Sys File Menu](#sys-file-menu)
     - [Find HWINFO\_S.dat](#--find-hwinfo_sdat)
-    - [Find HWINFO\_S.dat (deep)](#--find-hwinfo_sdat-(deep))
+    - [Find HWINFO\_S.dat (deep)](#--find-hwinfo_sdat-deep)
     - [Init HWINFO\_N.dat](#--init-hwinfo_ndat)
     - [Init HWINFO\_S.dat](#--init-hwinfo_sdat)
     - [Init cert.sys](#--init-certsys)
@@ -55,9 +55,9 @@ Install the standard NandFirm. The versions I include are slightly updated for r
 - `v2265-9336` (prod)
 - `v2725-9336` (dev)
 ### - Import NandFirm (SDMC)
-Install the [SDMC Launcher](https://randommeaninglesscharacters.com/dsidev/sdmc_launcher.html) NandFirm. It is completely different from the standard NandFirm, and it will leave the home menu inaccessible. This is only for extreme edge cases and should be avoided.
+Install the [SDMC Launcher](https://randommeaninglesscharacters.com/dsidev/sdmc_launcher.html) NandFirm. It is completely different from the standard NandFirm, and it will leave the firmware inaccessible. This is only for extreme edge cases where the filesystem cannot be repaired, and so SDMC Launcher should be avoided.
 
-**DO NOT INSTALL THIS UNLESS OTHERWISE TOLD.**
+**DO NOT INSTALL SDMC LAUNCHER UNLESS OTHERWISE TOLD.**
 
 ## Sys File Menu
 These functions deal with system files that are required for the DSi to boot. Much of this is focused around HWInfo Secure, the file that sets your region and serial number. It is impossible to recreate due to signing, and without it you will be permanently forced to use unlaunch.

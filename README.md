@@ -1,22 +1,44 @@
 # ![app icon](icon.bmp) TwlNandTool
 
-This is the best DSi NAND repair tool out there, offering features such as:
+TwlNandTool is **the** best DSi NAND repair tool out there, offering features such as:
 - Fixing MBR
 - Formatting FAT partitions
-- Fixing Stage2 (NandFirm)
-- Recovering deleted HWInfo secure
+- Recovering deleted HWInfo Secure
+- Installing Stage2 (NandFirm)
+- Installing new system files
 - Installing minimal firmware titles and unlaunch
+- Testing firmware and DSiWare for corruption
 - Lots of useful NAND diagnostic info
+- And more documented [here!](USAGE.md)
 
-Why do these matter? You can create a new working NAND from scratch! No backups needed (but still recommended)!
+Why do these matter? No matter how badly messed up your DSi is- even if your NAND is zerofilled- TwlNandTool can put it back in a working state. You don't even need a NAND backup (though it is still **HIGHLY RECOMMENDED**)! Best of all, it's compatible with retail and development DSis both!
 
 ![FileSystem menu](.github/filesystem.png)![NAND CID info](.github/cidinfo.png)
+
+## Building
+devkitPro decided to release libnds v2.0 and break... everything. Features I need like lower level NAND editing do not seem to work in the new calico, so I'm evily forcing you to use an offensive pre-v2.0 docker image that'll destroy the community or something. I think that's what devkitPro would say. Anyways:
+
+Download the outdated docker image!
+```sh
+docker image pull devkitpro/devkitarm:20241104
+```
+Run the outdated docker image!
+```sh
+docker run --rm -v /home/rvtr/Desktop/TwlNandTool:/work \
+    -it --entrypoint bash devkitpro/devkitarm:20241104
+```
+This will open a shell. Simply do this:
+```sh
+cd work
+make
+```
+I have made [a backup](https://twlsdk.randommeaninglesscharacters.com/dkp_docker_20241104.tar) in case the docker image ever gets pulled.
 
 ## Contributing
 I'm basing a lot of this off of my private DSi [NAND archive](https://nands.randommeaninglesscharacters.com/directory.html) and a lot of DSi [factory tools](https://randommeaninglesscharacters.com/dsidev/twl_eva.html). If you have any of the above, *especially a __bricked__ DSi*, please [contact me](https://randommeaninglesscharacters.com/contact.html). Having these as a reference is extremely helpful for covering more edge cases.
 
 ## Notes
-- I am including my own hostile and outdated fork of libfat. This is to block `nand_Startup()` during `fatMount()`. Without this having a NAND re-mount would run `nand_Startup()` more than once and break every NAND R/W function until reboot...
+- I am including my own hostile and outdated fork of libfat (devkitPro's enemy speedrun any %). This is to block `nand_Startup()` during `fatMount()`. Without this having a NAND re-mount would run `nand_Startup()` more than once and break every NAND R/W function until reboot...
 - I do not use the release NandFirm/stage2/bootloader (v2435-8325). Instead I use newer NandFirms as listed below. These NandFirms are able to run unlaunch, however they will stop the installer from working ("unknown bootcode version"). Unlaunch installs carry a brick risk by sometimes erasing the Launcher TMD, so this will somewhat forcefully encourage users to move to a [safer installer](https://github.com/edo9300/unlaunch-installer). Normally I'm against intentionally breaking things but this will prevent future bricks.
 	- v2265-9336 (prod)
 	- v2725-9336 (dev)
