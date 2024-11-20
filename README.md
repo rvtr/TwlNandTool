@@ -27,7 +27,7 @@ Run the outdated docker image!
 docker run --rm -v /home/rvtr/Desktop/TwlNandTool:/work \
     -it --entrypoint bash devkitpro/devkitarm:20241104
 ```
-This will open a shell. Simply do this:
+Running the docker image will open a shell. Simply do this in the shell:
 ```sh
 cd work
 make
