@@ -52,10 +52,12 @@ static u32 fat_sig_fix_offset = 0;
 
 static u32 sector_buf32[SECTOR_SIZE/sizeof(u32)];
 u8 *sector_buf = (u8*)sector_buf32;
-static u32 sector_buf232[SECTOR_SIZE/sizeof(u32)];
-u8 *sector_buf2 = (u8*)sector_buf232;
+static u32 sector_buf322[SECTOR_SIZE/sizeof(u32)];
+u8 *sector_buf2 = (u8*)sector_buf322;
 static u32 file_buf32[BUFFER_SIZE/sizeof(u32)];
 u8 *file_buf = (u8*)file_buf32;
+static u32 file_buf322[BUFFER_SIZE/sizeof(u32)];
+u8 *file_buf2 = (u8*)file_buf322;
 
 void nandio_set_fat_sig_fix(u32 offset)
 {

@@ -185,6 +185,7 @@ bool readMbr(void) {
 	iprintf("\n>> MBR (Master Boot Record)     ");
 	iprintf("\n--------------------------------");
 
+	memset(sector_buf, 0, 512);
     if(nand_ReadSectors(0, 1, sector_buf) == false) {
     	iprintf("\nCouldn't read NAND!\n");
     	success = false;

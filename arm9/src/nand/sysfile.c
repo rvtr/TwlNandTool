@@ -9,6 +9,7 @@
 #include "nandio.h"
 #include "nandfirm.h"
 #include "sysfile.h"
+#include "hwinfo.h"
 #include "sector0.h"
 #include "crypto.h"
 #include "../message.h"
@@ -16,7 +17,7 @@
 #include "../video.h"
 #include "../storage.h"
 
-static size_t i;
+//static size_t i;
 
 enum {
 	SYSFILEMENU_RECOVER,
@@ -28,71 +29,6 @@ enum {
 	SYSFILEMENU_INIT_CERT,
 	SYSFILEMENU_INIT_FONT
 };
-
-/*
-
-	I just need to plan things out:
-	- verifyHWInfo
-		- Just test input HWInfo buffer
-	- recoverHWInfoShallow
-		- Check for easy to find file (in mounted TWL_MAIN, then by common HWInfo offsets)
-	- recoverHWInfoDeep
-		- Scrap the entire TWL_MAIN byte by byte to find HWInfo (last resort)
-	- resignHWInfo
-
-	Let's design this around edge cases- meet the TWL-CPU-X4 (prototype).
-	The HWInfo is made up of one "real" HWInfo at the start, then a repeating secondary HWInfo to pad out to 16kb.
-
-	40E34ABB 0E81922C 0B2B24E5 CD4864D4 \
-	637F0199 D385B1AA A893F65E EDADE869  |
-	DA66D05D 5B31A897 E4AAF339 83FDD161  | "Real" HWInfo signature
-	128804B7 B7BA3C06 CD5304ED 9642181C  |
-	A57B3B8B 695E1B37 6F7F220B 019C3932  |
-	8D45C9AE 99550547 71E77ECD 0C442E98  |
-	E2ECB154 BB4D7305 AF75D324 7231B36A  |
-	A53677B1 EB4D0102 C8F31A43 EED93758 /
-	01000000 1C000000 01000000 00000000 <-- Region and language info
-	00414141 50503241 47303538 31000000 <-- Serial number
-	4A414E48 <-- Launcher TID
-
-	785E7A35 9A9B3C08 B9AAE1D5 02D5CD71	<-- No idea what this entire block is!
-	E7CFDC89 607EC36A 7A680E45 D0B30B50
-	BBD36599 99731FE3 91F61DDB 8788C2C1
-	50B19D58 ... and so on for 0x36C bytes.
-
-	64E1D65C 2649BBAA EDF4808A 3B5830A0 \
-	2E0C2E9A 481A0487 E9DC32DB A49BDA8C  |
-	901B5647 2E3473CB 7317122A 2F7ECCE3  | "Real" HWInfo signature
-	C880187C 0EA2C230 DFFED67A D6AC7C54  |
-	98676C25 4B1726FF 3EAA6EE4 39A718CA  |
-	EA2ECF98 9B41BA5F 3E32A49F 8262DE7E  |
-	201585B4 E4D27B32 B4D501EE 2B098032 /
-	01000000 1C000000 01000000 00000000 <-- Region and language info
-	002E2E02 2E2E022E 2E022E59 02595902 <-- Serial number (completely broken)
-	4A414E48 <-- Launcher TID
-
-	785E7A35 9A9B3C08 B9AAE1D5 02D5CD71	<-- This weird block appears again!
-	E7CFDC89 607EC36A 7A680E45 D0B30B50
-	BBD36599 99731FE3 91F61DDB 8788C2C1
-	50B19D58 ... and so on for 0x36C bytes.
-
-	I have no idea what testing this DSi went through. I can't say if this is unique to the X4 or not.
-	
-	Anyways, the "weird block" is repeated between every HWInfo chunk. We can check for...
-	- 0x414E48: the common part of the launcher TID
-	- 0x785E7A35 9A9B3C08 B9AAE1D5 02D5CD71: the "weird block" data after the TID
-
-	Then to verify this is a HWInfo, check if the "weird block" is repeated 0x36C + size of HWInfo later.
-	This will work on retail as well since the "weird block" here is 0xFF padding until 16kb, so it will always repeat.
-
-	Never let down the prototype enjoyers, even if this makes the process way more annoying!
-
-	Oh also here's another edge case!
-	The factory HWInfo Secure created by PRE_IMPORT will be entirely 0xFF.
-	It will only exist in uninitialized units (did not leave the factory).
-	If you find 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF then do not proceed to recoverHWInfoDeep.
-
-*/
 
 static int _sysfileMenu(int cursor)
 {
@@ -150,6 +86,7 @@ int sysfileMain(void)
 			{
 
 				case SYSFILEMENU_RECOVER:
+					recoverHWInfo(false);
 					break;
 
 				case SYSFILEMENU_RECOVER2:
@@ -228,9 +165,9 @@ bool makeCertChain(void) {
 	    printf("\nRemoving old cert.sys...");
 	    char nitro_path[100];
 	    snprintf(nitro_path, 100, "nitro:/import/%s/cert.sys", consoleSignName);
-	    remove("nand:/sys/cert.sys");
+	    remove(CERT_PATH);
 	    printf("\nWriting cert.sys...");
-	    if (copyFile(nitro_path, "nand:/sys/cert.sys") != 0) {
+	    if (copyFile(nitro_path, CERT_PATH) != 0) {
 	    	success = false;
 	    } else {
 	    	printf("\nDone!");
@@ -257,9 +194,9 @@ bool makeFontTable(void) {
 	    printf("\nRemoving old TWLFontTable...");
 	    char nitro_path[100];
 	    snprintf(nitro_path, 100, "nitro:/import/common/TWLFontTable.dat");
-	    remove("nand:/sys/TWLFontTable.dat");
+	    remove(FONT_PATH);
 	    printf("\nWriting TWLFontTable (world)...");
-	    if (copyFile(nitro_path, "nand:/sys/TWLFontTable.dat") != 0) {
+	    if (copyFile(nitro_path, FONT_PATH) != 0) {
 	    	success = false;
 	    } else {
 	    	printf("\nDone!");
@@ -272,48 +209,3 @@ bool makeFontTable(void) {
 	exitFunction();
 	return success;
 }
-
-/*
-bool recoverHWInfo(void) {
-	success = true;
-	bool hwinfofound = false;
-	clearScreen(cSUB);
-
-	iprintf("\n>> Recover HWInfo Secure        ");
-	iprintf("\n--------------------------------");
-
-	if (nandMounted == true) {
-
-	    printf("\nChecking mounted TWL_MAIN...");
-	    if (fileExists("nand:/sys/HWINFO_S.dat")) {
-	    	printf("\nFound HWInfo.");
-		    if (copyFile("nand:/sys/HWINFO_S.dat", "sd:/HWINFO_S_BACKUP.dat") != 0) {
-		    	success = false;
-		    	printf("\nCouldn't copy HWInfo!");
-		    } else {
-		    	printf("\nCopied okay.");
-		    	// Some verification here
-		    	hwinfofound = true;
-		    }
-		} else {
-	    	printf("\nCouldn't find HWInfo!");
-		}
-	} else {
-		iprintf("\nChecking common offsets...");
-
-
-nandioread(offset + tidOffset, 16)
-if (first 3 bytes == ANH)
-    nandioread(offset + tidOffset + 0x3CB, 16)
-    if (nandioread == nandioread)
-        // Verify
-        fopen fwrite fclose
-
-
-
-	}
-
-	exitFunction();
-	return success;
-}
-*/

@@ -193,6 +193,7 @@ int main(int argc, char **argv)
 	mountMain();
 	mountNitroFS();
 	agingMode = false;
+	mkdir("sd:/TwlNandTool", 0777);
 
 	// 
 	swiWaitForVBlank();
