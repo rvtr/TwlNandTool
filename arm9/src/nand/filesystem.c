@@ -64,9 +64,12 @@ enum {
   	FSMENU_NULL,
 	FSMENU_MOUNT_MAIN,
 	FSMENU_UNMOUNT_MAIN,
+	FSMENU_MOUNT_PHOTO,
+	FSMENU_UNMOUNT_PHOTO,
 	FSMENU_MOUNT_NITRO,
 	FSMENU_NULL2,
 	FSMENU_FILETEST_MAIN,
+	FSMENU_FILETEST_PHOTO,
 	FSMENU_FILETEST_NITRO
 };
 
@@ -84,9 +87,12 @@ static int _fsMenu(int cursor)
 	addMenuItem(m, "------------------", NULL, 0, "");
 	addMenuItem(m, "Mount TWL_MAIN", NULL, 0, "Mount the TWL_MAIN partition.");
 	addMenuItem(m, "Unmount TWL_MAIN", NULL, 0, "Unmount the TWL_MAIN partition");
+	addMenuItem(m, "Mount TWL_PHOTO", NULL, 0, "Mount the TWL_PHOTO partition.");
+	addMenuItem(m, "Unmount TWL_PHOTO", NULL, 0, "Unmount the TWL_PHOTO partition");
 	addMenuItem(m, "Mount NitroFS", NULL, 0, "Mount the ROM filesystem.");
 	addMenuItem(m, "------------------", NULL, 0, "");
 	addMenuItem(m, "File test TWL_MAIN", NULL, 0, "Attempt to make/delete dummy\n file on NAND.");
+	addMenuItem(m, "File test TWL_PHOTO", NULL, 0, "Attempt to make/delete dummy\n file on NAND.");
 	addMenuItem(m, "File test NitroFS", NULL, 0, "Attempt to read file in\n NitroFS.");
 
 	m->cursor = cursor;
@@ -148,11 +154,19 @@ int fsMain(void)
 					break;
 
 				case FSMENU_MOUNT_MAIN:
-					mountMain();
+					mountNAND(false);
 					break;
 
 				case FSMENU_UNMOUNT_MAIN:
-					unmountMain();
+					unmountNAND(false);
+					break;
+
+				case FSMENU_MOUNT_PHOTO:
+					mountNAND(true);
+					break;
+
+				case FSMENU_UNMOUNT_PHOTO:
+					unmountNAND(true);
 					break;
 
 				case FSMENU_MOUNT_NITRO:
@@ -163,7 +177,11 @@ int fsMain(void)
 					break;
 
 				case FSMENU_FILETEST_MAIN:
-					filetestMain();
+					filetestNAND(false);
+					break;
+
+				case FSMENU_FILETEST_PHOTO:
+					filetestNAND(true);
 					break;
 
 				case FSMENU_FILETEST_NITRO:
@@ -321,55 +339,82 @@ bool formatPhoto(void) {
 	return success;
 }
 
-bool mountMain(void) {
+bool mountNAND(bool isPhoto) {
 	success = true;
 	clearScreen(cSUB);
 
-	iprintf("\n>> Mount TWL_MAIN               ");
+	char partition_name[10];
+	snprintf(partition_name, 10, isPhoto ? "TWL_PHOTO" : "TWL_MAIN");
+
+	iprintf("\n>> Mount %s\n", partition_name);
 	iprintf("\n--------------------------------");
 
-	if (nandMounted == true) {
+	if (isPhoto ? nandPhotoMounted : nandMounted) {
 		if (!agingMode) {
 			agingMode = true;
-			unmountMain();
+			unmountNAND(isPhoto);
 			agingMode = false;
 		} else {
-			unmountMain();
+			unmountNAND(isPhoto);
 		}
 	}
 
 	clearScreen(cSUB);
-	iprintf("\n>> Mount TWL_MAIN               ");
+	iprintf("\n>> Mount %s\n", partition_name);
 	iprintf("\n--------------------------------");
 
 	if (!nandio_startup()) {
 		iprintf("\nFailed startup!");
 		success = false;
 	}
-	if (success == true && !fatMountSimple("nand", &io_dsi_nand, true)) {
-		iprintf("\n\x1B[31mMount TWL_MAIN failed!\n\x1B[30m\nNAND must be repaired. Try...\n - Fixing MBR\n - Formatting TWL_MAIN");
-		success = false;
-	} else if (success == true) {
-		iprintf("\nTWL_MAIN mounted okay.");
-		nandio_unlock_writing();
-		nandMounted = true;
+	if (isPhoto) {
+		mbr_t mbr;
+		io_dsi_nand.readSectors(0, 1, &mbr);
+		if (success == true && !fatMount("photo", &io_dsi_nand, mbr.partitions[1].offset, 16, 8, false)) {
+			iprintf("\n\x1B[31mMount TWL_PHOTO failed!\n\x1B[30m\nNAND must be repaired. Try...\n - Fixing MBR\n - Formatting TWL_PHOTO");
+			success = false;
+		} else if (success == true) {
+			iprintf("\nTWL_PHOTO mounted okay.");
+			nandio_unlock_writing();
+			nandPhotoMounted = true;
+		}
+	} else {
+		if (success == true && !fatMountSimple("nand", &io_dsi_nand, true)) {
+			iprintf("\n\x1B[31mMount TWL_MAIN failed!\n\x1B[30m\nNAND must be repaired. Try...\n - Fixing MBR\n - Formatting TWL_MAIN");
+			success = false;
+		} else if (success == true) {
+			iprintf("\nTWL_MAIN mounted okay.");
+			nandio_unlock_writing();
+			nandMounted = true;
+		}
 	}
 
 	exitFunction();
 	return success;
 }
 
-bool unmountMain(void) {
+bool unmountNAND(bool isPhoto) {
 	success = true;
 	clearScreen(cSUB);
 
-	iprintf("\n>> Unmount TWL_MAIN             ");
+	char partition_name[10];
+	snprintf(partition_name, 10, isPhoto ? "TWL_PHOTO" : "TWL_MAIN");
+	char partition_path[10];
+	snprintf(partition_path, 10, isPhoto ? "photo" : "nand");
+
+	iprintf("\n>> Unmount %s\n", partition_name);
 	iprintf("\n--------------------------------");
 
-	if (nandMounted == true) {
-		iprintf("\nUnmounting NAND...");
-		fatUnmount("nand");
-		nandMounted = false;
+	if (isPhoto ? nandPhotoMounted : nandMounted) {
+		iprintf("\nUnmounting %s...", partition_name);
+		fatUnmount(partition_path);
+
+		if (isPhoto) {
+			nandPhotoMounted = false;
+		} else {
+			nandMounted = false;
+		}
+		// Unmounting NAND also unmounts the SD. Why???? Average dkp experience I guess.
 		sdMounted = false;
 
 		// I just don't want to interrupt the startup aging test
@@ -382,17 +427,17 @@ bool unmountMain(void) {
 		}
 
 		clearScreen(cSUB);
-		iprintf("\n>> Umount TWL_MAIN              ");
+		iprintf("\n>> Umount %s\n", partition_name);
 		iprintf("\n--------------------------------");
 
 		if (success) {
-			iprintf("\nTWL_MAIN unmounted okay.");
+			iprintf("\n%s unmounted okay.", partition_name);
 		} else {
-			iprintf("\nFailed to mount TWL_MAIN!");
+			iprintf("\nFailed to mount %s!", partition_name);
 		}
 
 	} else {
-		iprintf("\nNAND not mounted!\nDoing nothing.");
+		iprintf("\n%s not mounted!\nDoing nothing.", partition_name);
 	}
 
 	exitFunction();
@@ -431,21 +476,32 @@ bool mountNitroFS(void) {
 	return success;
 }
 
-bool filetestMain(void) {
+bool filetestNAND(bool isPhoto) {
 	success = true;
 	clearScreen(cSUB);
 
-	iprintf("\n>> Read TWL_MAIN file           ");
+	char partition_name[10];
+	snprintf(partition_name, 10, isPhoto ? "TWL_PHOTO" : "TWL_MAIN");
+	char partition_path[10];
+	snprintf(partition_path, 10, isPhoto ? "photo" : "nand");
+
+	iprintf("\n>> Read %s file", partition_name);
 	iprintf("\n--------------------------------");
 
-	if (nandMounted == true) {
+	if (isPhoto ? nandPhotoMounted : nandMounted) {
 	    printf("\nMaking temp folder...");
-		mkdir("nand:/tmp", 0777);
+
+		if (isPhoto) {
+			mkdir("photo:/tmp", 0777);
+		} else {
+			mkdir("nand:/tmp", 0777);
+		}
 
 	    printf("\nOpening test file...\n");
 
 	    char file_path[100];
-	    snprintf(file_path, 100, "nand:/tmp/test.bin");
+	    snprintf(file_path, 100, "%s:/tmp/test.bin", partition_path);
+
 	    FILE *file = fopen(file_path, "wb");
 	    printf("\n%s\n", file_path);
 	    if(file) {
@@ -480,10 +536,10 @@ bool filetestMain(void) {
 			iprintf("\nFile failed to open!");
 	    }
 
-	    remove(file_path);
+	    //remove(file_path);
 	} else {
 		success = false;
-		iprintf("\nTWL_MAIN is not mounted!");
+		iprintf("\n%s is not mounted!", partition_name);
 	}
 
 	exitFunction();

@@ -75,5 +75,6 @@ extern hwsFormat hwsData;
 bool clearHWInfoStruct();
 bool loadHWInfoStruct();
 bool recoverHWInfo(bool simple);
+bool recoverHWInfoDeep();
 bool recoverHWInfoOffset(int address);
 bool saveHWInfoSDMC(void);

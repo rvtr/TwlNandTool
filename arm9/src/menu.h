@@ -35,6 +35,7 @@ void resetMenu(Menu* m);
 void clearMenu(Menu* m);
 void clearHelpMenu(Menu* m);
 void printHelpMenu(Menu* m);
+void printDebugIDs(Menu* m);
 void printMenu(Menu* m, int level);
 
 bool moveCursor(Menu* m);

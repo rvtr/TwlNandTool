@@ -16,6 +16,7 @@
 #include "../storage.h"
 
 static size_t i;
+bool hwinfofound = false;
 
 hwsFormat hwsData = {0};
 
@@ -40,7 +41,6 @@ bool loadHWInfoStruct() {
 
 bool recoverHWInfo(bool simple) {
     success = true;
-    bool hwinfofound = false;
     clearScreen(cSUB);
 
     iprintf("\n>> Recover HWInfo Secure        ");
@@ -154,7 +154,6 @@ bool recoverHWInfoOffset(int address) {
 
     memset(sector_buf, 0, 512);
     good_nandio_read(address + 0x91, 32, file_buf, true);
-    // 0x414E48
     printf("\n     ");
     for (i = 0; i < 32; i++) {
         printf("%02X", file_buf[i]);
@@ -169,7 +168,7 @@ bool recoverHWInfoOffset(int address) {
         success = true;
         printf("\n\nLauncher TID found!");
         good_nandio_read(address + 0x400 + 0x91, 32, file_buf2, true);
-        for (int i = 19; i < 32; i++) {
+        for (i = 19; i < 32; i++) {
             if (file_buf[i] != file_buf2[i]) {
                 success = false;
                 break;
@@ -194,6 +193,67 @@ bool recoverHWInfoOffset(int address) {
         }
         //    // Verify
         //    fopen fwrite fclose
+    }
+    exitFunction();
+    return success;
+}
+
+// 0x10EE00 is the twl_main start
+// 0xCDF1200 is the twl_main size
+
+bool recoverHWInfoDeep(void) {
+    success = false;
+    clearScreen(cSUB);
+    iprintf("\n>> Recover HWInfo Secure Deep   ");
+    iprintf("\n--------------------------------");
+    int j = 0;
+    iprintf("\nSearching raw TWL_MAIN...\n\n ");
+    for (i = 0; i < (0xCDF1200 / SECTOR_SIZE); i++) {
+        good_nandio_read(0x10EE00 + (i * SECTOR_SIZE), SECTOR_SIZE, file_buf, true);
+
+        if (j >= 20) {
+            char currentPicto = downloadPlayLoading(69);
+            printf("\b%c", currentPicto);
+            j = 0;
+        } else {
+            j++;
+        }
+
+        if (file_buf[0 + 0xA1] == 0x41 && file_buf[1 + 0xA1] == 0x4E && file_buf[2 + 0xA1] == 0x48) {
+            iprintf("\b\x1B[1A\nFound xANH");
+            success = true;
+            good_nandio_read(0x10EE00 + (i * SECTOR_SIZE), SECTOR_SIZE, file_buf, true);
+            good_nandio_read(0x10EE00 + (i * SECTOR_SIZE) + 0x400, SECTOR_SIZE, file_buf2, true);
+            for (int j = 0xA4; j < 0xB4; j++) {
+                if (file_buf[j] != file_buf2[j]) {
+                    success = false;
+                    iprintf("\nExtra data didn't match.");
+                }
+            }
+            iprintf("\nDone.");
+            if (success == true) { // also if (verify)
+                memset(sector_buf, 0, SECTOR_SIZE);
+                good_nandio_read(0x10EE00 + (i * SECTOR_SIZE), SECTOR_SIZE, sector_buf, true);
+                printf("\n%02X%02X%02X", sector_buf[0 + 0xA1], sector_buf[1 + 0xA1], sector_buf[2 + 0xA1]);
+                if (!agingMode) {
+                    agingMode = true;
+                    success = saveHWInfoSDMC();
+                    agingMode = false;
+                } else {
+                    success = saveHWInfoSDMC();
+                }
+                clearScreen(cSUB);
+                iprintf("\n>> Recover HWInfo Secure Deep ");
+                iprintf("\n--------------------------------");
+                if (success == true) {
+                    iprintf("\nRecovery was ok!");
+                } else {
+                    iprintf("\nFailed to back up HWInfo!");
+                }
+                exitFunction();
+                return success;
+            }
+        }
     }
     exitFunction();
     return success;

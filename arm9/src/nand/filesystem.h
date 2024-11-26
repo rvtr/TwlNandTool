@@ -20,9 +20,9 @@ bool readMbr(void);
 bool repairMbr(bool autofix);
 bool formatMain(void);
 bool formatPhoto(void);
-bool mountMain(void);
-bool unmountMain(void);
+bool mountNAND(bool isPhoto);
+bool unmountNAND(bool isPhoto);
 bool mountNitroFS(void);
 
-bool filetestMain(void);
+bool filetestNAND(bool isPhoto);
 bool filetestNitro(void);

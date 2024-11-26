@@ -17,5 +17,5 @@ void wait(int ticks);
 
 int nfMain(void);
 
-bool nandFirmRead(void);
-bool nandFirmImport(bool sdmc);
+bool readNandFirm(void);
+bool importNandFirm(bool sdmc);

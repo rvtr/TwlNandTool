@@ -18,14 +18,14 @@
 
 /************************ Constants / Defines *********************************/
 
-static const mbr_partition_t ptable_DSi[MBR_PARTITIONS] = {
+const mbr_partition_t ptable_DSi[MBR_PARTITIONS] = {
 	{0u, {3u, 24u, 4u}, 6u, {15u, 224u, 59u}, 0x00000877u, 0x00066f89u},
-	{0u, {2u, 206u, 60u}, 6u, {15u, 224u, 190u}, 0x0006784u, 0x000105b3u},
-	{0u, {2u, 222u, 191u}, 1u, {15u, 224u, 191u}, 0x00077e5u, 0x000001a3u},
+	{0u, {2u, 206u, 60u}, 6u, {15u, 224u, 190u}, 0x0006784du, 0x000105b3u},
+	{0u, {2u, 222u, 191u}, 1u, {15u, 224u, 191u}, 0x00077e5du, 0x000001a3u},
 	{0u, {0u, 0u, 0u}, 0u, {0u, 0u, 0u}, 0u, 0u}
 };
 
-static const mbr_partition_t ptable_3DS[MBR_PARTITIONS] = {
+const mbr_partition_t ptable_3DS[MBR_PARTITIONS] = {
 	{0u, {4u, 24u, 0u}, 6u, {1u, 160u, 63u}, 0x0000009u, 0x00047da9u},
 	{0u, {4u, 142u, 64u}, 6u, {1u, 160u, 195u}, 0x0004808u, 0x000105b3u},
 	{0u, {0u, 0u, 0u}, 0u, {0u, 0u, 0u}, 0u, 0u},
@@ -99,9 +99,47 @@ int parse_mbr(const uint8_t sector0[SECTOR_SIZE], const int is3DS)
 	ref_ptable = is3DS?ptable_3DS:ptable_DSi;
 	// only test the 1st partition now, we've seen variations on the 3rd partition
 	// and after all we only care about the 1st partition
-	if (memcmp(ref_ptable, m->partitions, sizeof(mbr_partition_t)))
+	if (memcmp(&ref_ptable[0], &m->partitions[0], sizeof(mbr_partition_t)))
+	{
+		return -2;
+	}
+	if (memcmp(&ref_ptable[1], &m->partitions[1], sizeof(mbr_partition_t)))
 	{
 		return -2;
 	}
 	return 0;
 }
+
+/*
+// return 0 for valid MBR
+int parse_mbr(const uint8_t sector0[SECTOR_SIZE], int is3DS, int verbose) {
+	const mbr_t *m = (mbr_t*)sector0;
+	const mbr_partition_t *ref_ptable; // reference partition table
+	int ret = 0;
+	if (m->boot_signature_0 != 0x55 || m->boot_signature_1 != 0xaa) {
+		//printf("invalid boot signature(0x55, 0xaa)\n");
+		ret = -1;
+	}
+	if (!is3DS) {
+		for (unsigned i = 0; i < sizeof(m->bootstrap); ++i) {
+			if (m->bootstrap[i]) {
+				//printf("bootstrap on DSi should be all zero\n");
+				ret = 0;
+				break;
+			}
+		}
+		ref_ptable = ptable_DSi;
+	} else {
+		ref_ptable = ptable_3DS;
+	}
+	// Only check the first two as those are the only ones we mount
+	// There's some variation in the 3rd
+	for(int i = 0; i < 2; i++) {
+		if (memcmp(&ref_ptable[i], &m->partitions[i], sizeof(mbr_partition_t))) {
+			//printf("invalid partition table\n");
+			ret = -2;
+		}
+	}
+	return ret;
+}
+*/

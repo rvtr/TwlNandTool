@@ -164,22 +164,46 @@ void clearHelpMenu(Menu* m)
 	iprintf("\x1b[6;0H\x1b[K");
 	iprintf("\x1b[7;0H\x1b[K");
 	iprintf("\x1b[8;0H\x1b[K");
-	iprintf("\x1b[9;0H%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c", (char)139, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)141);
+	iprintf("\x1b[9;0H\x1b[K");
 	iprintf("\x1b[10;0H\x1b[K");
-	iprintf("\x1b[11;0H\x1B[40m%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%cInfo%c%c%c%c%c", (char)138, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)134, (char)135, (char)136, (char)136, (char)136, (char)140);
-	iprintf("\x1B[30m\x1b[12;0H\x1b[K %s %s", m->header, VERSION);
-	iprintf("\x1b[13;0H\x1b[K Built on:   %s", BUILD_DATE);
-	iprintf("\x1b[14;0H\x1b[K Made by:    RMC/RVTR");
+	iprintf("\x1b[11;0H\x1b[K");
+	iprintf("\x1b[12;0H\x1b[K");
+	iprintf("\x1b[13;0H\x1b[K");
+	iprintf("\x1b[14;0H%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c", (char)139, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)141);
 	iprintf("\x1b[15;0H\x1b[K");
-	iprintf("\x1b[16;0H\x1b[K");
-	iprintf("\x1b[17;0H\x1b[K Run on: %s\x1B[40m", consoleType);
-	iprintf("\x1b[18;0H%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\x1B[30m", (char)139, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)141);
+	iprintf("\x1b[16;0H\x1B[40m%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%cInfo%c%c%c%c%c", (char)138, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)134, (char)135, (char)136, (char)136, (char)136, (char)140);
+	iprintf("\x1B[30m\x1b[17;0H\x1b[K %s %s", m->header, VERSION);
+	iprintf("\x1b[18;0H\x1b[K %s RMC/RVTR", BUILD_DATE);
+	iprintf("\x1b[19;0H\x1b[K");
+	iprintf("\x1b[20;0H\x1b[K Serial:  AAAMP1234567");
+	iprintf("\x1b[21;0H\x1b[K Version: v0.1A (ALL)");
+	iprintf("\x1b[22;0H\x1b[K Run on:  %s\x1B[40m", consoleType);
+	iprintf("\x1b[23;0H%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\x1B[30m", (char)139, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)136, (char)141);
 }
 
 void printHelpMenu(Menu* m) 
 {
 	if (!m) return;
+	consoleSet(cMAIN);
 	iprintf("\x1B[30m\x1b[1;0H %s", m->items[m->cursor].help);
+}
+
+void printDebugIDs(Menu* m) 
+{
+	if (!m) return;
+	consoleSet(cSUB);
+	iprintf("\x1b[22;0H[");
+	int i;
+    for (i = 8; i > 0;) {
+    	i--;
+        printf("%02X", consoleID[i]);
+    }
+    iprintf("]\x1b[23;0H[");
+    for (i = 15; i > 0;) {
+    	i--;
+        printf("%02X", CID[i]);
+    }
+    iprintf("]");
 }
 
 void printMenu(Menu* m, int level)
@@ -187,6 +211,7 @@ void printMenu(Menu* m, int level)
 
 	clearHelpMenu(m);
 	printHelpMenu(m);
+	printDebugIDs(m);
 	consoleSet(cSUB);
 
 	if (!m) return;

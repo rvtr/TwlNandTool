@@ -90,6 +90,7 @@ int sysfileMain(void)
 					break;
 
 				case SYSFILEMENU_RECOVER2:
+					recoverHWInfoDeep();
 					break;
 
 				case SYSFILEMENU_NULL:

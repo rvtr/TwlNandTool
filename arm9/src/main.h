@@ -10,7 +10,9 @@
 #include "video.h"
 #include "nitrofs.h"
 
+extern bool legitHWInfo;
 extern bool nandMounted;
+extern bool nandPhotoMounted;
 extern bool sdMounted;
 extern bool agingMode;
 extern bool success;

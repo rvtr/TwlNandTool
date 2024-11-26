@@ -74,15 +74,15 @@ int nfMain(void)
 			{
 
 				case NFMENU_CHECK_VER:
-					nandFirmRead();
+					readNandFirm();
 					break;
 
 				case NFMENU_IMPORT:
-					nandFirmImport(false);
+					importNandFirm(false);
 					break;
 
 				case NFMENU_IMPORT_SDMC:
-					nandFirmImport(true);
+					importNandFirm(true);
 					break;
 			}
 		}
@@ -93,7 +93,7 @@ int nfMain(void)
 	return 0;
 }
 
-bool nandFirmRead(void) {
+bool readNandFirm(void) {
 	success = true;
 	clearScreen(cSUB);
 
@@ -119,7 +119,7 @@ bool nandFirmRead(void) {
 	return success;
 }
 
-bool nandFirmImport(bool sdmc) {
+bool importNandFirm(bool sdmc) {
 	success = true;
 	clearScreen(cSUB);
 

@@ -10,6 +10,7 @@
 #include "nand/nandfirm.h"
 #include "nand/chipinfo.h"
 #include "nand/sysfile.h"
+#include "nand/hwinfo.h"
 #include "video.h"
 #include "nitrofs.h"
 #include "font.h"
@@ -45,7 +46,9 @@
 */
 extern bool nand_Startup();
 extern bool sdio_Startup();
+bool legitHWInfo = false;
 bool nandMounted = false;
+bool nandPhotoMounted = false;
 bool sdMounted = false;
 bool agingMode = false;
 bool success = false;
@@ -190,7 +193,8 @@ int main(int argc, char **argv)
 	}
 
 	agingMode = true;
-	mountMain();
+	mountNAND(false);
+	mountNAND(true);
 	mountNitroFS();
 	agingMode = false;
 	mkdir("sd:/TwlNandTool", 0777);
@@ -201,7 +205,7 @@ int main(int argc, char **argv)
 
 	if (keysDown() & KEY_START || keysDown() & KEY_SELECT) {
 	} else {
-		debug1();
+		recoverHWInfoDeep();
 	}
 
 	clearScreen(cSUB);
@@ -325,10 +329,10 @@ int debug3(void) {
     if (success == true && !nandPrintInfo()) {
         success = false;
     }
-	if (success == true && !nandFirmImport(true)) {
+	if (success == true && !importNandFirm(true)) {
         success = false;
     }
-    if (success == true && !nandFirmRead()) {
+    if (success == true && !readNandFirm()) {
         success = false;
     }
 	if (success == true && !repairMbr(true)) {
@@ -337,19 +341,25 @@ int debug3(void) {
 	if (success == true && !readMbr()) {
         success = false;
 	}
-	if (success == true && !mountMain()) {
-		if (!formatMain() && !formatPhoto() && !mountMain()) {
-			iprintf("\nNAND mount failed!");
+	if (success == true && !mountNAND(false)) {
+		if (!formatMain() && !mountNAND(false)) {
 			success = false;
-		} else {
-			nandMounted = true;
 		}
-	} else if (nandMounted == true) {
-		iprintf("\nNAND already mounted.");
-	} else {
-		nandMounted = true;
 	}
-	if (success == true && !filetestMain()) {
+	if (success == true && !mountNAND(true)) {
+		if (!formatPhoto() && !mountNAND(true)) {
+			success = false;
+		}
+	}
+	if (success == true && !recoverHWInfo(false)) {
+		if (success == true && !recoverHWInfoDeep()) {
+			success = false;
+		}	
+	}
+	if (success == true && !filetestNAND(false)) {
+        success = false;
+	}
+	if (success == true && !filetestNAND(true)) {
         success = false;
 	}
 	if (success == true && !makeSystemFolders()) {
@@ -361,7 +371,10 @@ int debug3(void) {
 	if (success == true && !makeFontTable()) {
         success = false;
 	}
-	if (success == true && !unmountMain()) {
+	if (success == true && !unmountNAND(false)) {
+        success = false;
+	}
+	if (success == true && !unmountNAND(true)) {
         success = false;
 	}
 	if (success == true && !filetestNitro()) {	
