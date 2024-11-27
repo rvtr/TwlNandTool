@@ -13,6 +13,7 @@
 #include "../message.h"
 #include "../main.h"
 #include "../video.h"
+#include "../audio.h"
 
 static size_t i;
 
@@ -47,8 +48,10 @@ static int _chipMenu(int cursor)
 		if (keysDown() & KEY_A)
 			break;
 
-		if (keysDown() & KEY_B)
+		if (keysDown() & KEY_B) {
+			soundPlayBack();
 			programEnd = true;
+		}
 	}
 
 	int result = m->cursor;
@@ -71,10 +74,12 @@ int chipMain(void)
 			{
 
 				case CHIPMENU_NAND_INFO:
+					soundPlaySelect();
 					nandPrintInfo();
 					break;
 
 				case CHIPMENU_CPU_INFO:
+					soundPlaySelect();
 					cpuPrintInfo();
 					break;
 			}

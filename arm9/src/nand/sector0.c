@@ -97,8 +97,7 @@ int parse_mbr(const uint8_t sector0[SECTOR_SIZE], const int is3DS)
 		return -1;
 	}
 	ref_ptable = is3DS?ptable_3DS:ptable_DSi;
-	// only test the 1st partition now, we've seen variations on the 3rd partition
-	// and after all we only care about the 1st partition
+
 	if (memcmp(&ref_ptable[0], &m->partitions[0], sizeof(mbr_partition_t)))
 	{
 		return -2;
@@ -109,37 +108,3 @@ int parse_mbr(const uint8_t sector0[SECTOR_SIZE], const int is3DS)
 	}
 	return 0;
 }
-
-/*
-// return 0 for valid MBR
-int parse_mbr(const uint8_t sector0[SECTOR_SIZE], int is3DS, int verbose) {
-	const mbr_t *m = (mbr_t*)sector0;
-	const mbr_partition_t *ref_ptable; // reference partition table
-	int ret = 0;
-	if (m->boot_signature_0 != 0x55 || m->boot_signature_1 != 0xaa) {
-		//printf("invalid boot signature(0x55, 0xaa)\n");
-		ret = -1;
-	}
-	if (!is3DS) {
-		for (unsigned i = 0; i < sizeof(m->bootstrap); ++i) {
-			if (m->bootstrap[i]) {
-				//printf("bootstrap on DSi should be all zero\n");
-				ret = 0;
-				break;
-			}
-		}
-		ref_ptable = ptable_DSi;
-	} else {
-		ref_ptable = ptable_3DS;
-	}
-	// Only check the first two as those are the only ones we mount
-	// There's some variation in the 3rd
-	for(int i = 0; i < 2; i++) {
-		if (memcmp(&ref_ptable[i], &m->partitions[i], sizeof(mbr_partition_t))) {
-			//printf("invalid partition table\n");
-			ret = -2;
-		}
-	}
-	return ret;
-}
-*/

@@ -28,7 +28,7 @@
 
 ---------------------------------------------------------------------------------*/
 #include "my_sdmmc.h"
-
+#include <maxmod7.h>
 #include <nds.h>
 #include <string.h>
 
@@ -117,6 +117,12 @@ int main()
 	fifoInit();
 	touchInit();
 
+	mmInstall(FIFO_MAXMOD);
+	SetYtrigger(202);
+
+	installSoundFIFO();
+	installSystemFIFO();
+
 	if (isDSiMode() /*|| ((REG_SCFG_EXT & BIT(17)) && (REG_SCFG_EXT & BIT(18)))*/)
 	{
 		u8 *out=(u8*)0x02300000;
@@ -163,10 +169,6 @@ int main()
 	}
 
 	SetYtrigger(80);
-
-	installSoundFIFO();
-
-	installSystemFIFO();
 
 	irqSet(IRQ_VCOUNT, VcountHandler);
 

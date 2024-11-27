@@ -27,16 +27,19 @@ bool clearHWInfoStruct() {
     }
     hwsData.HWS_HEADER = 0x01000000;
     hwsData.HWS_SIZE = 0x1C000000;
-    hwsData.HWS_LANG = 0x01000000;
+    hwsData.HWS_LANG = (LANG_BITMAP_JAPAN << 24);
+    hwsData.HWS_LANG &= 0xFF000000;
+    //hwsData.HWS_LANG = 0x01000000;
     hwsData.HWS_PAD = 0x00000000;
-    hwsData.HWS_REGION = 0x00;
+    hwsData.HWS_REGION = LANG_JAPANESE;
     strcpy(hwsData.HWS_SERIAL, "AAAMP1234567"); // You're a real one if you understand this serial.
-    hwsData.HWS_TID = 0x50414E48;
+    hwsData.HWS_TID = 0x4A414E48;
     return true;
 }
 
-bool loadHWInfoStruct() {
-    return true;
+bool loadHWInfoStruct(u8 *hwinfo_buf) {
+    // 0xA4 is the HWInfo size (trimmed)
+    memcpy(&hwsData, hwinfo_buf, 0xA4);
 }
 
 bool recoverHWInfo(bool simple) {
@@ -67,15 +70,25 @@ bool recoverHWInfo(bool simple) {
     }
 
     if (simple == false) {
-        agingMode = true;
-        if (recoverHWInfoOffset(HWS_OFFSET_OTHER)) {
-            hwinfofound = true;
-        } else if (recoverHWInfoOffset(HWS_OFFSET_BOX)) {
-            hwinfofound = true;
-        } else if (recoverHWInfoOffset(HWS_OFFSET_HANDHELD)) {
-            hwinfofound = true;
+        if (!agingMode) {
+            agingMode = true;
+            if (recoverHWInfoOffset(HWS_OFFSET_OTHER)) {
+                hwinfofound = true;
+            } else if (recoverHWInfoOffset(HWS_OFFSET_BOX)) {
+                hwinfofound = true;
+            } else if (recoverHWInfoOffset(HWS_OFFSET_HANDHELD)) {
+                hwinfofound = true;
+            }
+            agingMode = false;
+        } else {
+            if (recoverHWInfoOffset(HWS_OFFSET_OTHER)) {
+                hwinfofound = true;
+            } else if (recoverHWInfoOffset(HWS_OFFSET_BOX)) {
+                hwinfofound = true;
+            } else if (recoverHWInfoOffset(HWS_OFFSET_HANDHELD)) {
+                hwinfofound = true;
+            }
         }
-        agingMode = false;
     }
 
     clearScreen(cSUB);
@@ -179,7 +192,9 @@ bool recoverHWInfoOffset(int address) {
             memset(sector_buf, 0, 0xA4);
             iprintf("\nLoading HWInfo...");
             good_nandio_read(address, 0xA4, file_buf, true);
-            memcpy(&hwsData, file_buf, 0xA4);
+
+            loadHWInfoStruct(file_buf);
+            
             success = saveHWInfoSDMC();
 
             clearScreen(cSUB);
@@ -232,9 +247,10 @@ bool recoverHWInfoDeep(void) {
             }
             iprintf("\nDone.");
             if (success == true) { // also if (verify)
-                memset(sector_buf, 0, SECTOR_SIZE);
-                good_nandio_read(0x10EE00 + (i * SECTOR_SIZE), SECTOR_SIZE, sector_buf, true);
-                printf("\n%02X%02X%02X", sector_buf[0 + 0xA1], sector_buf[1 + 0xA1], sector_buf[2 + 0xA1]);
+                memset(file_buf, 0, SECTOR_SIZE);
+                good_nandio_read(0x10EE00 + (i * SECTOR_SIZE), SECTOR_SIZE, file_buf, true);
+                printf("\n%02X%02X%02X", file_buf[0 + 0xA1], file_buf[1 + 0xA1], file_buf[2 + 0xA1]);
+                loadHWInfoStruct(file_buf);
                 if (!agingMode) {
                     agingMode = true;
                     success = saveHWInfoSDMC();
@@ -243,7 +259,7 @@ bool recoverHWInfoDeep(void) {
                     success = saveHWInfoSDMC();
                 }
                 clearScreen(cSUB);
-                iprintf("\n>> Recover HWInfo Secure Deep ");
+                iprintf("\n>> Recover HWInfo Secure Deep   ");
                 iprintf("\n--------------------------------");
                 if (success == true) {
                     iprintf("\nRecovery was ok!");
@@ -266,20 +282,26 @@ bool saveHWInfoSDMC(void) {
     iprintf("\n>> Save HWInfo Secure to SDMC   ");
     iprintf("\n--------------------------------");
 
-        // I need to do region checking (world/korea/china)
-        printf("\nRemoving old HWInfo...");
-        remove(HWS_PATH_SD);
-        printf("\nWriting HWInfo...");
+    printf("\nClearing HWInfo buffer...");
+    memset(file_buf, 0, 0x4000);
 
-        FILE *file = fopen(HWS_PATH_SD, "wb");
-        if(file) {
-            fwrite(sector_buf, 1, 0xA4, file);
-            fclose(file);
-            iprintf("\nFile written.");
-        } else {
-            success = false;
-            iprintf("\nFile failed to open!");
-        }
+
+
+    // I need to do region checking (world/korea/china)
+    // ^^^^ huh??? What for? Regions shouldn't be needed HWInfo R/W.
+    printf("\nRemoving old HWInfo...");
+    remove(HWS_PATH_SD);
+    printf("\nWriting HWInfo...");
+
+    FILE *file = fopen(HWS_PATH_SD, "wb");
+    if(file) {
+        fwrite(sector_buf, 1, 0xA4, file);
+        fclose(file);
+        iprintf("\nFile written.");
+    } else {
+        success = false;
+        iprintf("\nFile failed to open!");
+    }
 
     exitFunction();
     return success;

@@ -16,6 +16,7 @@
 #include "../main.h"
 #include "../video.h"
 #include "../menu.h"
+#include "../audio.h"
 #include "../lib/libfat/include/fat.h"
 
 extern bool nand_Startup();
@@ -111,8 +112,10 @@ static int _fsMenu(int cursor)
 		if (keysDown() & KEY_A)
 			break;
 
-		if (keysDown() & KEY_B)
+		if (keysDown() & KEY_B) {
+			soundPlayBack();
 			programEnd = true;
+		}
 	}
 
 	int result = m->cursor;
@@ -135,56 +138,70 @@ int fsMain(void)
 			{
 
 				case FSMENU_READ_MBR:
+					soundPlaySelect();
 					readMbr();
 					break;
 
 				case FSMENU_REPAIR_MBR:
+					soundPlaySelect();
 					repairMbr(false);
 					break;
 
 				case FSMENU_FORMAT_MAIN:
+					soundPlaySelect();
 					formatMain();
 					break;
 
 				case FSMENU_FORMAT_PHOTO:
+					soundPlaySelect();
 					formatPhoto();
 					break;
 
 				case FSMENU_NULL:
+					soundPlaySelect();
 					break;
 
 				case FSMENU_MOUNT_MAIN:
+					soundPlaySelect();
 					mountNAND(false);
 					break;
 
 				case FSMENU_UNMOUNT_MAIN:
+					soundPlaySelect();
 					unmountNAND(false);
 					break;
 
 				case FSMENU_MOUNT_PHOTO:
+					soundPlaySelect();
 					mountNAND(true);
 					break;
 
 				case FSMENU_UNMOUNT_PHOTO:
+					soundPlaySelect();
 					unmountNAND(true);
 					break;
 
 				case FSMENU_MOUNT_NITRO:
+					soundPlaySelect();
 					mountNitroFS();
 					break;
 
 				case FSMENU_NULL2:
+					soundPlaySelect();
 					break;
 
 				case FSMENU_FILETEST_MAIN:
+					soundPlaySelect();
 					filetestNAND(false);
 					break;
 
 				case FSMENU_FILETEST_PHOTO:
+					soundPlaySelect();
 					filetestNAND(true);
 					break;
 
 				case FSMENU_FILETEST_NITRO:
+					soundPlaySelect();
 					filetestNitro();
 					break;
 			}
@@ -485,7 +502,7 @@ bool filetestNAND(bool isPhoto) {
 	char partition_path[10];
 	snprintf(partition_path, 10, isPhoto ? "photo" : "nand");
 
-	iprintf("\n>> Read %s file", partition_name);
+	iprintf("\n>> Read %s file\n", partition_name);
 	iprintf("\n--------------------------------");
 
 	if (isPhoto ? nandPhotoMounted : nandMounted) {

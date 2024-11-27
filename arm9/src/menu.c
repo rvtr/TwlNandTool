@@ -1,6 +1,7 @@
 #include "menu.h"
 #include "main.h"
 #include "video.h"
+#include "audio.h"
 #include "version.h"
 #include "nand/nandio.h"
 
@@ -343,20 +344,24 @@ bool moveCursor(Menu* m)
 
 	u32 down = keysDownRepeat();
 
-	if (down & KEY_DOWN)
+	if (down & KEY_DOWN) {
+		soundPlaySelect();
 		_moveCursor(m, 1);
-
-	else if (down & KEY_UP)
+	} else if (down & KEY_UP) {
+		soundPlaySelect();
 		_moveCursor(m, -1);
+	}
 
 	if (down & KEY_RIGHT)
 	{
+		soundPlaySelect();
 		repeat(10)
 			_moveCursor(m, 1);
 	}
 
 	else if (down & KEY_LEFT)
 	{
+		soundPlaySelect();
 		repeat(10)
 			_moveCursor(m, -1);
 	}
@@ -382,14 +387,24 @@ char downloadPlayLoading(int number) {
 
 void exitFunction() {
 	if (agingMode == false) {
+		wait(25);
+		if (success == true) {
+			setBackdropColorSub(0x1FE0);
+			soundPlayPass();
+		} else {
+			setBackdropColorSub(0x00FF);
+			soundPlayFail();
+		}
 		iprintf("\n\n  Please Push Select To Return  ");
 		while (true)
 		{
 			swiWaitForVBlank();
 			scanKeys();
 
-			if (keysDown() & KEY_SELECT )
+			if (keysDown() & KEY_SELECT ) {
+				soundPlayBack();
 				break;
+			}
 		}
 	} else {
 		wait(50);

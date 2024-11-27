@@ -12,6 +12,7 @@
 #include "nand/sysfile.h"
 #include "nand/hwinfo.h"
 #include "video.h"
+#include "audio.h"
 #include "nitrofs.h"
 #include "font.h"
 #include <stdlib.h>
@@ -21,14 +22,12 @@
 
 	TODO:
 	- LESS NAND WRITES!!!!!
-	- Write good NAND read routine
 	- Detect debugger vs dev (less important currently)
-	- Recover HWInfo byte by byte
 	- HWInfo verify
 	- HWInfo sign (can wait for a very long time)
 	- Why doesn't unmounting NAND get reflected in the file test?
 	- NandFirm hash checking <-- very very very important!
-	- Wipe TWLCFG, launcher saves, etc
+	- Make dummy TWLCFG, launcher saves, etc
 	- product.log reading and writing
 	- TAD stuff
 		- Title verification (exception for HNAG)
@@ -85,42 +84,42 @@ static int _mainMenu(int cursor)
 	clearScreen(cSUB);
  	clearScreen(cMAIN);
 
-    //menu
-    Menu* m = newMenu();
-    setMenuHeader(m, "TwlNandTool");
-    setListHeader(m, "START MENU");
+	//menu
+	Menu* m = newMenu();
+	setMenuHeader(m, "TwlNandTool");
+	setListHeader(m, "START MENU");
 
-    addMenuItem(m, "FileSystem Menu", NULL, 0, "Options such as repairing MBR\n and formatting TWL_MAIN/PHOTO.");
-    addMenuItem(m, "NandFirm Menu", NULL, 0, "NandFirm (stage2) installers\n and verification.");
-    addMenuItem(m, "Sys File Menu", NULL, 0, "Create/recover system files\n like HWInfo, FontTable, and\n cert.sys");
-    addMenuItem(m, "Chip Info Menu", NULL, 0, "Info on the NAND and CPU.");
-    addMenuItem(m, "---------------", NULL, 0, "");
-    addMenuItem(m, "Debug1", NULL, 0, "Font display.");
-    addMenuItem(m, "Debug2", NULL, 0, "MBR corruption test.");
-    addMenuItem(m, "Debug3", NULL, 0, "NAND AGING test.");
-    addMenuItem(m, "Exit", NULL, 0, "Leave the program.");
+	addMenuItem(m, "FileSystem Menu", NULL, 0, "Options such as repairing MBR\n and formatting TWL_MAIN/PHOTO.");
+	addMenuItem(m, "NandFirm Menu", NULL, 0, "NandFirm (stage2) installers\n and verification.");
+	addMenuItem(m, "Sys File Menu", NULL, 0, "Create/recover system files\n like HWInfo, FontTable, and\n cert.sys");
+	addMenuItem(m, "Chip Info Menu", NULL, 0, "Info on the NAND and CPU.");
+	addMenuItem(m, "---------------", NULL, 0, "");
+	addMenuItem(m, "Debug1", NULL, 0, "Font display.");
+	addMenuItem(m, "Debug2", NULL, 0, "MBR corruption test.");
+	addMenuItem(m, "Debug3", NULL, 0, "NAND AGING test.");
+	addMenuItem(m, "Exit", NULL, 0, "Leave the program.");
 
-    m->cursor = (cursor);
+	m->cursor = (cursor);
 
-    //bottom screen
-    printMenu(m, 0);
+	//bottom screen
+	printMenu(m, 0);
 
-    while (!programEnd)
-    {
-        swiWaitForVBlank();
-        scanKeys();
+	while (!programEnd)
+	{
+		swiWaitForVBlank();
+		scanKeys();
 
-        if (moveCursor(m))
-            printMenu(m, 0);
+		if (moveCursor(m))
+			printMenu(m, 0);
 
-        if (keysDown() & KEY_A)
-            break;
-    }
+		if (keysDown() & KEY_A)
+			break;
+	}
 
-    int result = m->cursor;
-    freeMenu(m);
+	int result = m->cursor;
+	freeMenu(m);
 
-    return result;
+	return result;
 }
 
 void fifoHandlerPower(u32 value32, void* userdata)
@@ -142,38 +141,39 @@ int main(int argc, char **argv)
 {
 
 	fifoWaitValue32(FIFO_USER_01);
-    consoleSign = fifoGetValue32(FIFO_USER_01);
+	consoleSign = fifoGetValue32(FIFO_USER_01);
 
-    if (consoleSign == 0x00) {
-        strcpy(consoleSignName, "prod");
-    } else {
-        strcpy(consoleSignName, "dev");
-    }
+	if (consoleSign == 0x00) {
+		strcpy(consoleSignName, "prod");
+	} else {
+		strcpy(consoleSignName, "dev");
+	}
 
-    if (consoleSign == 0x00) {
-        strcpy(consoleType, "Retail");
-    } else if (consoleSign == 0x02) {
-        strcpy(consoleType, "Panda");
-    }/*
+	if (consoleSign == 0x00) {
+		strcpy(consoleType, "Retail");
+	} else if (consoleSign == 0x02) {
+		strcpy(consoleType, "Panda");
+	}/*
 
 	Do some check here to determine retail, panda, and debugger.
 	Then block debuggers due to different FW and a higher chance of messing stuff up without an easy fix.
 
-    else if (consoleSign == 0x02 || ) {
+	else if (consoleSign == 0x02 || ) {
 		strcpy consoleType, "Debugger"
-    }
-    */
+	}
+	*/
 
-    videoInit();
+	videoInit();
+	soundInit();
 
-    srand(time(0));
-    keysSetRepeat(25, 5);
-    //_setupScreens();
+	srand(time(0));
+	keysSetRepeat(25, 5);
+	//_setupScreens();
 
-    fifoSetValue32Handler(FIFO_USER_01, fifoHandlerPower, NULL);
-    fifoSetValue32Handler(FIFO_USER_03, fifoHandlerBattery, NULL);
+	fifoSetValue32Handler(FIFO_USER_01, fifoHandlerPower, NULL);
+	fifoSetValue32Handler(FIFO_USER_03, fifoHandlerBattery, NULL);
 
-    iprintf("\x1B[30m");
+	iprintf("\x1B[30m");
 
 	if (!isDSiMode()) {
 		messageBox("\x1B[31mError:\x1B[30m This app is only for DSi.");
@@ -205,75 +205,87 @@ int main(int argc, char **argv)
 
 	if (keysDown() & KEY_START || keysDown() & KEY_SELECT) {
 	} else {
-		recoverHWInfoDeep();
+		//recoverHWInfoDeep();
+		//debug3();
 	}
 
 	clearScreen(cSUB);
  	clearScreen(cMAIN);
 
-    int cursor = 0;
+ 	soundPlayStartup();
+ 	wait(10);
 
-    while (!programEnd)
-    {
-        cursor = _mainMenu(cursor);
+	int cursor = 0;
 
-        switch (cursor)
-        {
+	while (!programEnd)
+	{
+		cursor = _mainMenu(cursor);
 
-            case STARTMENU_FS_MENU:
-                fsMain();
-                break;
+		switch (cursor)
+		{
 
-            case STARTMENU_NF_MENU:
-                nfMain();
-                break;
+			case STARTMENU_FS_MENU:
+				soundPlaySelect();
+				fsMain();
+				break;
 
-            case STARTMENU_SYSFILE_MENU:
-                sysfileMain();
-                break;
+			case STARTMENU_NF_MENU:
+				soundPlaySelect();
+				nfMain();
+				break;
 
-            case STARTMENU_CHIP_MENU:
-                chipMain();
-                break;
+			case STARTMENU_SYSFILE_MENU:
+				soundPlaySelect();
+				sysfileMain();
+				break;
 
-            case STARTMENU_NULL:
-                break;
+			case STARTMENU_CHIP_MENU:
+				soundPlaySelect();
+				chipMain();
+				break;
 
-            case STARTMENU_TEST:
-                debug1();
-                break;
+			case STARTMENU_NULL:
+				soundPlaySelect();
+				break;
 
-            case STARTMENU_TEST2:
-                debug2();
-                break;
+			case STARTMENU_TEST:
+				soundPlaySelect();
+				debug1();
+				break;
 
-            case STARTMENU_TEST3:
-                debug3();
-                break;
+			case STARTMENU_TEST2:
+				soundPlaySelect();
+				debug2();
+				break;
 
-            case STARTMENU_EXIT:
-                programEnd = true;
-                break;
-        }
-    }
+			case STARTMENU_TEST3:
+				soundPlaySelect();
+				debug3();
+				break;
 
-    clearScreen(cSUB);
-    printf("Unmounting NAND...\n");
-	if(nandMounted) {
-		fatUnmount("nand");
+			case STARTMENU_EXIT:
+				soundPlaySelect();
+				programEnd = true;
+				break;
+		}
 	}
+
+	clearScreen(cSUB);
+	agingMode = true;
+	unmountNAND(false);
+	unmountNAND(true);
 	// I think this was some safety thing but it wants to re-write the entire NAND...
 	// I'm the one person always saying "NANDs aren't that weak", so you know it's excessive when I comment it out.
 
-    //printf("Merging stages...\n");
-    //nandio_shutdown();
+	//printf("Merging stages...\n");
+	//nandio_shutdown();
 
-    fifoSendValue32(FIFO_USER_02, 0x54495845); // 'EXIT'
+	fifoSendValue32(FIFO_USER_02, 0x54495845); // 'EXIT'
 
-    while (arm7Exiting)
-        swiWaitForVBlank();
+	while (arm7Exiting)
+		swiWaitForVBlank();
 
-    return 0;
+	return 0;
 }
 
 int debug1(void) {
@@ -281,12 +293,12 @@ int debug1(void) {
 	clearScreen(cSUB);
 
 	iprintf("\n>> Debug1");
-	iprintf("\n Show font                      ");
+	iprintf("\n Show font					  ");
 	iprintf("\n--------------------------------");
 
-    for (int i = 0; i <= 200; i++) {
-        printf("%c ", (char)i);
-    }
+	for (int i = 0; i <= 200; i++) {
+		printf("%c ", (char)i);
+	}
 
 	exitFunction();
 	return success;
@@ -296,102 +308,78 @@ int debug2(void) {
 	success = true;
 	clearScreen(cSUB);
 
-	iprintf("\n>> Corrupt MBR                  ");
+	iprintf("\n>> Corrupt MBR				  ");
 	iprintf("\n--------------------------------");	
 	memset(sector_buf, 0, 0x200);
 	iprintf("\nWriting new MBR...");
 	nand_WriteSectors(0, 1, sector_buf);
-    iprintf("\nTesting new MBR...");
+	iprintf("\nTesting new MBR...");
 	nand_ReadSectors(0, 1, sector_buf);
 	dsi_nand_crypt(sector_buf, sector_buf, 0, SECTOR_SIZE / AES_BLOCK_SIZE);
-    if(!parse_mbr(sector_buf, is3DS)) {
-    	iprintf("\n\n    \x1B[31mERROR!\x1B[30m Failed to break MBR.");
-    	success = false;
-    } else {
-    	iprintf("\n\x1B[32mMBR corrupted okay!\x1B[30m");
-    }
+	if(!parse_mbr(sector_buf, is3DS)) {
+		iprintf("\n\n	\x1B[31mERROR!\x1B[30m Failed to break MBR.");
+		success = false;
+	} else {
+		iprintf("\n\x1B[32mMBR corrupted okay!\x1B[30m");
+	}
 
 	exitFunction();
 	return success;
 }
 
 int debug3(void) {
-	success = true;
+	bool agingSuccess = false;
 	agingMode = true;
 	clearScreen(cSUB);
 
-	iprintf("\n>> NAND AGING tester            ");
+	iprintf("\n>> NAND AGING tester			");
 	iprintf("\n--------------------------------");
 
-    if (success == true && !cpuPrintInfo()) {
-        success = false;
-    }
-    if (success == true && !nandPrintInfo()) {
-        success = false;
-    }
-	if (success == true && !importNandFirm(true)) {
-        success = false;
-    }
-    if (success == true && !readNandFirm()) {
-        success = false;
-    }
-	if (success == true && !repairMbr(true)) {
-        success = false;
-    }
-	if (success == true && !readMbr()) {
-        success = false;
-	}
-	if (success == true && !mountNAND(false)) {
-		if (!formatMain() && !mountNAND(false)) {
-			success = false;
+	if (cpuPrintInfo()) {
+		if (nandPrintInfo()) {
+			if (importNandFirm(1)) {
+				if (readNandFirm()) {
+					if (repairMbr(true)) {
+						if (readMbr()) {
+							if (mountNAND(false) || (formatMain() && mountNAND(false))) {
+								if (mountNAND(true) || (formatPhoto() && mountNAND(true))) {
+									if (recoverHWInfo(false) || recoverHWInfoDeep()) {
+										if (filetestNAND(false)) {
+											if (filetestNAND(true)) {
+												if (makeSystemFolders()) {
+													if (makeCertChain()) {
+														if (makeFontTable()) {
+															if (unmountNAND(false)) {
+																if (unmountNAND(true)) {
+																	if (filetestNitro()) {	
+																		agingSuccess = true;
+																	}
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
-	}
-	if (success == true && !mountNAND(true)) {
-		if (!formatPhoto() && !mountNAND(true)) {
-			success = false;
-		}
-	}
-	if (success == true && !recoverHWInfo(false)) {
-		if (success == true && !recoverHWInfoDeep()) {
-			success = false;
-		}	
-	}
-	if (success == true && !filetestNAND(false)) {
-        success = false;
-	}
-	if (success == true && !filetestNAND(true)) {
-        success = false;
-	}
-	if (success == true && !makeSystemFolders()) {
-        success = false;
-	}
-	if (success == true && !makeCertChain()) {
-        success = false;
-	}
-	if (success == true && !makeFontTable()) {
-        success = false;
-	}
-	if (success == true && !unmountNAND(false)) {
-        success = false;
-	}
-	if (success == true && !unmountNAND(true)) {
-        success = false;
-	}
-	if (success == true && !filetestNitro()) {	
-        success = false;
 	}
 
 	agingMode = false;
 	clearScreen(cSUB);
-	iprintf("\n>> NAND AGING tester result     ");
+	iprintf("\n>> NAND AGING tester result	 ");
 	iprintf("\n--------------------------------");
-
+	success = agingSuccess;
 	if (success == true) {
 		iprintf("\nAll tests passed okay.");
-		setBackdropColorSub(0x1FE0);
 	} else {
 		iprintf("\nTests failed!");
-		setBackdropColorSub(0x00FF);
 	}
 
 	exitFunction();

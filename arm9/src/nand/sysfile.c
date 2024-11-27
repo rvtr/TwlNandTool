@@ -16,6 +16,7 @@
 #include "../main.h"
 #include "../video.h"
 #include "../storage.h"
+#include "../audio.h"
 
 //static size_t i;
 
@@ -62,8 +63,10 @@ static int _sysfileMenu(int cursor)
 		if (keysDown() & KEY_A)
 			break;
 
-		if (keysDown() & KEY_B)
+		if (keysDown() & KEY_B) {
+			soundPlayBack();
 			programEnd = true;
+		}
 	}
 
 	int result = m->cursor;
@@ -86,31 +89,39 @@ int sysfileMain(void)
 			{
 
 				case SYSFILEMENU_RECOVER:
+					soundPlaySelect();
 					recoverHWInfo(false);
 					break;
 
 				case SYSFILEMENU_RECOVER2:
+					soundPlaySelect();
 					recoverHWInfoDeep();
 					break;
 
 				case SYSFILEMENU_NULL:
+					soundPlaySelect();
 					break;
 
 				case SYSFILEMENU_INIT_FOLDER:
+					soundPlaySelect();
 					makeSystemFolders();
 					break;
 
 				case SYSFILEMENU_INIT_S:
+					soundPlaySelect();
 					break;
 
 				case SYSFILEMENU_INIT_N:
+					soundPlaySelect();
 					break;
 
 				case SYSFILEMENU_INIT_CERT:
+					soundPlaySelect();
 					makeCertChain();
 					break;
 
 				case SYSFILEMENU_INIT_FONT:
+					soundPlaySelect();
 					makeFontTable();
 					break;
 			}

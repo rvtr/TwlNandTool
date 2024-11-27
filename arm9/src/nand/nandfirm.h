@@ -18,4 +18,4 @@ void wait(int ticks);
 int nfMain(void);
 
 bool readNandFirm(void);
-bool importNandFirm(bool sdmc);
+bool importNandFirm(int firmtype);
